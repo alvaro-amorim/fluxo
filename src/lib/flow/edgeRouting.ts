@@ -1,4 +1,4 @@
-import type { Node } from "@xyflow/react";
+import type { Edge, Node } from "@xyflow/react";
 import type {
   FlowHandlePosition,
   FluxoEdgeData,
@@ -50,21 +50,31 @@ export function resolveSerializedEdgeHandles(
   if (!source || !target) return edge;
 
   const smart = getSmartHandles(serializedNodeToRect(source), serializedNodeToRect(target));
+  const shouldAutoRoute = edge.routing?.mode !== "manual" || shouldUseSmartHandle(edge.sourceHandle) || shouldUseSmartHandle(edge.targetHandle);
+
+  if (!shouldAutoRoute) return edge;
 
   return {
     ...edge,
-    sourceHandle: shouldUseSmartHandle(edge.sourceHandle) ? smart.sourceHandle : edge.sourceHandle,
-    targetHandle: shouldUseSmartHandle(edge.targetHandle) ? smart.targetHandle : edge.targetHandle,
+    sourceHandle: smart.sourceHandle,
+    targetHandle: smart.targetHandle,
+    routing: {
+      ...(edge.routing ?? { points: [], avoidCrossings: true }),
+      mode: "auto",
+    },
   };
 }
 
-export function resolveReactFlowEdgeHandles(edge: {
-  source: string;
-  target: string;
-  sourceHandle?: string | null;
-  targetHandle?: string | null;
-  data?: unknown;
-}, nodes: Node[]): {
+export function resolveReactFlowEdgeHandles(
+  edge: {
+    source: string;
+    target: string;
+    sourceHandle?: string | null;
+    targetHandle?: string | null;
+    data?: unknown;
+  },
+  nodes: Node[],
+): {
   sourceHandle: FlowHandlePosition;
   targetHandle: FlowHandlePosition;
 } {
@@ -83,29 +93,47 @@ export function resolveReactFlowEdgeHandles(edge: {
   }
 
   const smart = getSmartHandles(reactFlowNodeToRect(source), reactFlowNodeToRect(target));
+  const shouldAutoRoute = shouldAutoRouteEdge(edgeData, currentSourceHandle, currentTargetHandle);
 
-  return {
-    sourceHandle: shouldUseSmartHandle(currentSourceHandle) ? smart.sourceHandle : currentSourceHandle,
-    targetHandle: shouldUseSmartHandle(currentTargetHandle) ? smart.targetHandle : currentTargetHandle,
-  };
+  if (!shouldAutoRoute) {
+    return {
+      sourceHandle: currentSourceHandle,
+      targetHandle: currentTargetHandle,
+    };
+  }
+
+  return smart;
 }
 
-export function applySmartHandlesToReactFlowEdges(nodes: Node[], edges: Parameters<typeof resolveReactFlowEdgeHandles>[0][]) {
+export function applySmartHandlesToReactFlowEdges(nodes: Node[], edges: Edge[]): Edge[] {
   return edges.map((edge) => {
     const handles = resolveReactFlowEdgeHandles(edge, nodes);
     const data = (edge.data as FluxoEdgeData | undefined) ?? undefined;
+    const nextData = data
+      ? {
+          ...data,
+          sourceHandle: handles.sourceHandle,
+          targetHandle: handles.targetHandle,
+          routing: {
+            ...(data.routing ?? { points: [], avoidCrossings: true }),
+            mode: data.routing?.mode === "manual" ? "manual" : "auto",
+          },
+        }
+      : edge.data;
+
+    if (
+      edge.sourceHandle === handles.sourceHandle &&
+      edge.targetHandle === handles.targetHandle &&
+      nextData === edge.data
+    ) {
+      return edge;
+    }
 
     return {
       ...edge,
       sourceHandle: handles.sourceHandle,
       targetHandle: handles.targetHandle,
-      data: data
-        ? {
-            ...data,
-            sourceHandle: handles.sourceHandle,
-            targetHandle: handles.targetHandle,
-          }
-        : edge.data,
+      data: nextData,
     };
   });
 }
@@ -139,6 +167,14 @@ function reactFlowNodeToRect(node: Node): Rect {
     centerX: node.position.x + width / 2,
     centerY: node.position.y + height / 2,
   };
+}
+
+function shouldAutoRouteEdge(
+  data: Partial<FluxoEdgeData> | undefined,
+  sourceHandle: FlowHandlePosition,
+  targetHandle: FlowHandlePosition,
+) {
+  return data?.routing?.mode !== "manual" || shouldUseSmartHandle(sourceHandle) || shouldUseSmartHandle(targetHandle);
 }
 
 function shouldUseSmartHandle(handle: unknown) {

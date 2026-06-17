@@ -14,6 +14,22 @@ A `main` não deve ser alterada até que esta branch seja validada localmente.
 
 ---
 
+## Validação local mais recente
+
+Validação feita no Windows, na pasta local `fluxo`, após formatação com Prettier e normalização de line endings.
+
+Resultado informado:
+
+```txt
+npm run dev    ✅ aplicação rodou em localhost
+npm run build  ✅ build concluído com sucesso
+npm run lint   ✅ 0 errors, 6 warnings
+```
+
+Observação: os 6 warnings restantes são de `react-refresh/only-export-components` em componentes UI reaproveitados. Eles não bloqueiam o build nem o funcionamento atual.
+
+---
+
 ## Objetivo da rodada
 
 Organizar a base técnica do app **Fluxo** sem destruir o front-end criado no Lovable.
@@ -32,6 +48,7 @@ atalhos essenciais
 resize visual
 exportação PNG real inicial
 paleta flutuante arrastável
+layout reutilizável
 ```
 
 ---
@@ -46,6 +63,7 @@ src/lib/flow/normalization.ts
 src/lib/flow/validation.ts
 src/lib/flow/serialization.ts
 src/lib/flow/adapters.ts
+src/lib/flow/layout.ts
 src/lib/export/exportPng.ts
 ```
 
@@ -54,7 +72,9 @@ src/lib/export/exportPng.ts
 ## Arquivos alterados
 
 ```txt
+.gitattributes
 package.json
+package-lock.json
 src/lib/flow/types.ts
 src/lib/flow/example.ts
 src/lib/flow/store.ts
@@ -212,7 +232,7 @@ Criado:
 src/lib/flow/schema.ts
 ```
 
-Objetivo: reexportar tipos, defaults, validação, normalização e serialização para facilitar imports futuros.
+Objetivo: reexportar tipos, defaults, validação, normalização, serialização e layout para facilitar imports futuros.
 
 ---
 
@@ -239,135 +259,52 @@ Esses adapters começaram a ser usados diretamente no editor.
 
 ---
 
-## 9. Exemplo atualizado
-
-`src/lib/flow/example.ts` foi atualizado para usar o schema oficial com:
-
-```txt
-schemaVersion: 0.1.0
-createdAt
-updatedAt
-settings
-metadata
-style
-routing
-customFields
-```
-
-Também passou a reexportar funções oficiais de validação e serialização.
-
----
-
-## 10. Store local alinhado aos defaults
-
-`src/lib/flow/store.ts` agora usa:
-
-```txt
-createEmptyFlowProject
-createFlowId
-nowIso
-```
-
-A duplicação de projeto também marca:
-
-```txt
-metadata.source = duplicated
-```
-
----
-
-## 11. Ajuste de tipagem no modal de node
-
-`NodePropertiesModal.tsx` foi ajustado para lidar melhor com o `NodeStyle` expandido, restringindo a edição direta de cores aos campos:
-
-```txt
-backgroundColor
-borderColor
-textColor
-```
-
----
-
-## 12. Refatoração inicial do FlowEditor
+## 9. Refatoração inicial do editor
 
 `src/components/flow/FlowEditor.tsx` foi refatorado para usar:
 
-```txt
-src/lib/flow/adapters.ts
-src/lib/flow/serialization.ts
-```
-
-O editor deixou de concentrar toda a conversão React Flow ↔ projeto dentro do próprio componente.
-
-Agora usa:
-
 ```ts
-flowProjectToReactFlow(project);
-reactFlowToFlowProject(base, nodes, edges);
-projectToFlowFile(project);
-parseFlowFileJson(jsonText);
-flowFileToProject(file);
-stringifyFlowFile(file);
-getFlowFileName(name);
+flowProjectToReactFlow();
+reactFlowToFlowProject();
+projectToFlowFile();
+flowFileToProject();
+parseFlowFileJson();
+stringifyFlowFile();
+getFlowFileName();
+```
+
+Objetivo: reduzir duplicação de lógica de schema/import/export dentro do componente.
+
+---
+
+## 10. Atalhos essenciais
+
+Foram adicionados/reforçados:
+
+```txt
+Delete / Backspace  excluir seleção
+Ctrl+D              duplicar seleção
+Ctrl+A              selecionar tudo
+Esc                 limpar seleção / fechar modais
+Ctrl+P              exportar PNG
 ```
 
 ---
 
-## 13. Atalhos essenciais implementados
+## 11. Resize visual
 
-Foram adicionados ou consolidados:
+`FluxoNode` passou a usar `NodeResizer` do React Flow.
 
-```txt
-Delete / Backspace — excluir seleção
-Ctrl+D — duplicar seleção
-Ctrl+A — selecionar tudo
-Esc — limpar seleção/fechar modais
-Ctrl+S — exportar .flow.json
-Ctrl+E — exportar .flow.json
-Ctrl+O — importar .flow.json
-Ctrl+P — exportar PNG
-Ctrl+L — organizar fluxo
-Ctrl+Z — desfazer
-Ctrl+Y — refazer
-F11 — modo apresentação
-```
+Objetivo:
 
-Observação: a validação final dos atalhos precisa ser feita localmente no navegador.
+- permitir redimensionamento visual no canvas;
+- respeitar tamanho mínimo;
+- atualizar `width` e `height` do node;
+- preservar dimensões no `.flow.json`.
 
 ---
 
-## 14. Resize visual dos blocos
-
-`src/components/flow/FluxoNode.tsx` agora usa `NodeResizer` do React Flow.
-
-O resize:
-
-- aparece quando o node está selecionado;
-- respeita tamanho mínimo;
-- atualiza `data.width`;
-- atualiza `data.height`;
-- permite que o tamanho seja preservado no `.flow.json`.
-
-Também foram ajustados os IDs dos handles para:
-
-```txt
-top
-right
-bottom
-left
-```
-
-Isso alinha a conexão visual com o schema oficial.
-
----
-
-## 15. Exportação PNG real inicial
-
-Adicionado ao `package.json`:
-
-```txt
-html-to-image
-```
+## 12. Exportação PNG real inicial
 
 Criado:
 
@@ -375,99 +312,74 @@ Criado:
 src/lib/export/exportPng.ts
 ```
 
-O botão de PNG no editor agora chama uma função real de exportação baseada em `html-to-image`.
+A exportação usa `html-to-image`.
 
-Limitação atual:
+Evolução feita nesta etapa:
 
-- a exportação inicial captura o canvas React Flow visível;
-- ainda não garante exportação perfeita do fluxo inteiro com bounding box/margem;
-- esse refinamento deve ser feito em rodada futura ou validado localmente.
+- tenta capturar o fluxo completo com base nos nodes presentes no DOM;
+- aplica margem;
+- ignora minimap e controles;
+- usa fallback para exportar a viewport visível se a captura completa falhar.
 
----
-
-## 16. Toolbar flutuante arrastável
-
-`src/components/flow/Toolbar.tsx` agora permite mover a paleta quando estiver em modo flutuante.
-
-Comportamento:
-
-- modo lateral continua igual;
-- modo flutuante pode ser arrastado pelo cabeçalho;
-- posição é mantida em estado local enquanto a tela está aberta.
-
-Futuro:
-
-- persistir posição da paleta;
-- transformar em janela separada no Electron.
+Ainda precisa validação visual local em fluxos grandes.
 
 ---
 
-## Pontos que ainda precisam validação local
+## 13. Paleta flutuante arrastável
 
-Como esta rodada foi feita via edição remota, ainda falta rodar localmente:
+`Toolbar` foi ajustada para permitir movimentação quando estiver no modo flutuante.
 
-```bash
-npm install
-npm run dev
-npm run build
-npm run lint
+Objetivo: aproximar a experiência futura de janela/paleta separada.
+
+---
+
+## 14. Layout reutilizável
+
+Criado:
+
+```txt
+src/lib/flow/layout.ts
 ```
 
-Validar manualmente:
+Objetivo:
 
-- app abre;
-- tela inicial abre;
-- editor abre;
-- criação de blocos funciona;
-- conexão funciona;
-- importação `.flow.json` funciona;
-- exportação `.flow.json` funciona;
-- exportação PNG funciona;
-- resize aparece ao selecionar bloco;
-- Ctrl+D duplica;
-- Ctrl+A seleciona;
-- Delete remove;
-- toolbar flutuante arrasta;
-- modo apresentação continua funcionando.
+- preparar o botão “Organizar fluxo” para usar lógica fora do `FlowEditor`;
+- permitir layout vertical/horizontal em função pura;
+- facilitar futura troca por ELK.js sem reescrever a UI.
 
----
-
-## Riscos técnicos atuais
-
-Possíveis pontos para corrigir localmente caso apareçam erros:
-
-- compatibilidade exata do `NodeResizer` com a versão instalada de `@xyflow/react`;
-- tipos do callback `onSelectionChange`;
-- comportamento do `html-to-image` com React Flow;
-- necessidade de atualizar lockfile após adicionar `html-to-image`;
-- performance do autosave em `localStorage`;
-- resize ainda pode não registrar histórico de undo/redo de forma perfeita;
-- exportação PNG ainda pode capturar controles/viewport de forma diferente dependendo do DOM renderizado.
+Ainda precisa ser integrado ao botão do editor.
 
 ---
 
 ## Próxima etapa recomendada
 
-Depois da validação local básica, seguir para:
-
 ```txt
-1. Corrigir eventuais erros TypeScript/build.
-2. Extrair auto-layout para src/lib/flow/layout.ts.
-3. Melhorar organização vertical/horizontal.
-4. Preparar integração futura com ELK.js.
-5. Melhorar exportação PNG para fluxo completo com bounding box.
-6. Criar desktopBridge com fallbacks web.
-7. Só depois iniciar Electron.
+1. Integrar calculateAutoLayout ao botão Organizar fluxo
+2. Melhorar histórico para registrar resize/move no momento correto
+3. Testar exportação PNG em fluxo grande
+4. Avaliar bugs visuais do NodeResizer
+5. Preparar desktopBridge antes de Electron
 ```
 
 ---
 
-## Observação importante
+## Comandos de validação local
 
-A `main` não foi alterada.
+Após puxar alterações da branch, rodar:
 
-As alterações estão na branch:
+```powershell
+git pull
+npm install
+npm run format
+npm run lint
+npm run build
+npm run dev
+```
+
+Resultado esperado:
 
 ```txt
-dev/estrutura-base-fluxo
+lint: 0 errors, warnings aceitáveis
+build: sucesso
+app: abre em localhost
 ```

@@ -60,7 +60,7 @@ export function fluxoEdgeToReactFlowEdge(edge: FluxoEdgeSerialized): Edge {
     sourceHandle: edge.sourceHandle,
     targetHandle: edge.targetHandle,
     label: edge.label,
-    type: reactFlowEdgeType(edge.type),
+    type: "fluxoEdge",
     markerEnd: hasArrow
       ? {
           type: MarkerType.ArrowClosed,
@@ -146,12 +146,6 @@ export function reactFlowToFlowProject(
     edges: edges.map(reactFlowEdgeToFluxoEdge),
     updatedAt: nowIso(),
   };
-}
-
-function reactFlowEdgeType(type: EdgeLineType) {
-  if (type === "straight") return "straight";
-  if (type === "bezier") return "default";
-  return "smoothstep";
 }
 
 function normalizeHandle(value: unknown): FlowHandlePosition {

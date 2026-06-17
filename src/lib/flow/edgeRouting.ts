@@ -12,6 +12,9 @@ type NodeLike = Pick<FluxoNodeSerialized, "id" | "position" | "size">;
 type PhysicalHandle = Exclude<FlowHandlePosition, "auto">;
 export type ManualRouteAxis = "x" | "y";
 
+export type ManualRoutePoint = { x: number; y: number };
+type Point = ManualRoutePoint;
+
 type Rect = {
   id: string;
   x: number;
@@ -25,8 +28,6 @@ type Rect = {
   top: number;
   bottom: number;
 };
-
-type Point = { x: number; y: number };
 
 type HandleDescriptor = {
   id: PhysicalHandle;
@@ -180,17 +181,78 @@ export function getManualRouteControlPoints(
 
   if (options.axis === "x") {
     const corridorX = getHorizontalManualCorridorX(source, target, offset, minimumGap);
-    return [
+    return normalizeManualRoutePoints([
       { x: corridorX, y: source.centerY },
       { x: corridorX, y: target.centerY },
-    ];
+    ]);
   }
 
   const corridorY = getVerticalManualCorridorY(source, target, offset, minimumGap);
-  return [
+  return normalizeManualRoutePoints([
     { x: source.centerX, y: corridorY },
     { x: target.centerX, y: corridorY },
-  ];
+  ]);
+}
+
+export function normalizeManualRoutePoints(points: unknown): ManualRoutePoint[] {
+  if (!Array.isArray(points)) return [];
+
+  return points
+    .map((point) => {
+      if (!point || typeof point !== "object") return null;
+      const candidate = point as Partial<ManualRoutePoint>;
+      const x = Number(candidate.x);
+      const y = Number(candidate.y);
+
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+      return { x, y };
+    })
+    .filter((point): point is ManualRoutePoint => Boolean(point));
+}
+
+export function replaceManualRoutePoint(
+  points: unknown,
+  index: number,
+  nextPoint: ManualRoutePoint,
+): ManualRoutePoint[] {
+  const normalized = normalizeManualRoutePoints(points);
+  if (!Number.isInteger(index) || index < 0 || index >= normalized.length) return normalized;
+  if (!Number.isFinite(nextPoint.x) || !Number.isFinite(nextPoint.y)) return normalized;
+
+  return normalized.map((point, pointIndex) =>
+    pointIndex === index ? { x: nextPoint.x, y: nextPoint.y } : point,
+  );
+}
+
+export function insertManualRoutePoint(
+  points: unknown,
+  index: number,
+  point: ManualRoutePoint,
+): ManualRoutePoint[] {
+  const normalized = normalizeManualRoutePoints(points);
+  if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return normalized;
+
+  const safeIndex = Math.max(0, Math.min(index, normalized.length));
+  return [...normalized.slice(0, safeIndex), { x: point.x, y: point.y }, ...normalized.slice(safeIndex)];
+}
+
+export function removeManualRoutePoint(points: unknown, index: number): ManualRoutePoint[] {
+  const normalized = normalizeManualRoutePoints(points);
+  if (!Number.isInteger(index) || index < 0 || index >= normalized.length) return normalized;
+  return normalized.filter((_, pointIndex) => pointIndex !== index);
+}
+
+export function nudgeManualRoutePoints(
+  points: unknown,
+  delta: ManualRoutePoint,
+): ManualRoutePoint[] {
+  const normalized = normalizeManualRoutePoints(points);
+  if (!Number.isFinite(delta.x) || !Number.isFinite(delta.y)) return normalized;
+
+  return normalized.map((point) => ({
+    x: point.x + delta.x,
+    y: point.y + delta.y,
+  }));
 }
 
 function scoreHandlePair(

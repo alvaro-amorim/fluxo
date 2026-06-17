@@ -111,6 +111,11 @@ Funções disponíveis:
 ```ts
 getManualRouteControlPoint(sourceNode, targetNode, axis, offset)
 getManualRouteControlPoints(sourceNode, targetNode, options)
+normalizeManualRoutePoints(points)
+replaceManualRoutePoint(points, index, nextPoint)
+insertManualRoutePoint(points, index, point)
+removeManualRoutePoint(points, index)
+nudgeManualRoutePoints(points, delta)
 ```
 
 Objetivo:
@@ -119,9 +124,10 @@ Objetivo:
 - evitar cálculo duplicado dentro do `FlowEditor`;
 - preparar rotas manuais com 1 ou 2 pontos;
 - criar corredores laterais ou verticais mais previsíveis;
-- preparar melhorias futuras de edição visual dos pontos.
+- permitir futuras operações de edição visual, como arrastar, inserir, remover e deslocar pontos;
+- evitar que pontos inválidos quebrem o path SVG da seta.
 
-A função nova `getManualRouteControlPoints` gera dois pontos quando necessário, formando um caminho mais ortogonal para `Desvio X` e `Desvio Y`.
+A função `getManualRouteControlPoints` gera dois pontos quando necessário, formando um caminho mais ortogonal para `Desvio X` e `Desvio Y`.
 
 As funções também foram reexportadas por:
 
@@ -145,7 +151,9 @@ A edge customizada passou a preparar melhor rotas manuais:
 - área clicável maior;
 - destaque visual quando selecionada;
 - pontos de controle visíveis quando a seta manual está selecionada;
-- label posicionado no meio geométrico aproximado da rota.
+- label posicionado no meio geométrico aproximado da rota;
+- normalização compartilhada de pontos via `normalizeManualRoutePoints`;
+- pontos manuais com `data-route-point-index`, cursor e metadados para futura edição visual.
 
 ---
 
@@ -165,7 +173,8 @@ A renderização da seta customizada foi refinada para:
 - sanitizar `routing.points` antes de montar o path manual;
 - evitar que pontos inválidos quebrem a renderização da seta;
 - aumentar a área de interação da edge para facilitar clique;
-- numerar visualmente os pontos manuais quando a seta está selecionada.
+- numerar visualmente os pontos manuais quando a seta está selecionada;
+- preparar os pontos visuais para uma futura interação de arrastar.
 
 ### 2. Clareza e preparação da toolbar contextual
 
@@ -215,9 +224,10 @@ Ordem sugerida:
 ```txt
 1. Integrar getManualRouteControlPoints no FlowEditor para substituir o cálculo local de Desvio X/Y.
 2. Conectar Editar e Duplicar na SelectionToolbar.
-3. Criar handles visuais arrastáveis para routing.points.
-4. Melhorar histórico para registrar rota manual de forma previsível.
-5. Criar testes manuais guiados para fluxos com retorno, laço e ramificação.
+3. Conectar replace/insert/remove/nudge de pontos manuais ao canvas.
+4. Criar handles visuais arrastáveis para routing.points.
+5. Melhorar histórico para registrar rota manual de forma previsível.
+6. Criar testes manuais guiados para fluxos com retorno, laço e ramificação.
 ```
 
 ---

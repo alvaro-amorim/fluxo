@@ -29,7 +29,10 @@ export function SelectionToolbar({
   return (
     <div className="absolute left-1/2 top-16 z-40 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur">
       {onEdit ? (
-        <ToolbarButton onClick={onEdit} title="Editar propriedades do item selecionado. Atalho: duplo clique">
+        <ToolbarButton
+          onClick={onEdit}
+          title="Editar propriedades do item selecionado. Atalho: duplo clique"
+        >
           <Pencil className="h-3.5 w-3.5" />
           Editar
         </ToolbarButton>
@@ -44,15 +47,24 @@ export function SelectionToolbar({
 
       {hasEdgeSelection ? (
         <>
-          <ToolbarButton onClick={onAuto} title="Recalcular automaticamente a melhor saída e entrada da seta">
+          <ToolbarButton
+            onClick={onAuto}
+            title="Recalcular automaticamente a melhor saída e entrada da seta"
+          >
             <Route className="h-3.5 w-3.5" />
             Auto
           </ToolbarButton>
-          <ToolbarButton onClick={onDeviationX} title="Criar um desvio lateral manual na seta selecionada">
+          <ToolbarButton
+            onClick={onDeviationX}
+            title="Criar um desvio lateral manual na seta selecionada"
+          >
             <CornerDownRight className="h-3.5 w-3.5" />
             Desvio X
           </ToolbarButton>
-          <ToolbarButton onClick={onDeviationY} title="Criar um desvio vertical manual na seta selecionada">
+          <ToolbarButton
+            onClick={onDeviationY}
+            title="Criar um desvio vertical manual na seta selecionada"
+          >
             <CornerRightDown className="h-3.5 w-3.5" />
             Desvio Y
           </ToolbarButton>

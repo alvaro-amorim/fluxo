@@ -93,6 +93,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
   const [edges, setEdges] = useState<Edge[]>(initial.edges);
 
   const [tool, setTool] = useState<Tool>("select");
+  const [pendingConnectionSource, setPendingConnectionSource] = useState<string | null>(null);
   const [toolbarMode, setToolbarMode] = useState<"side" | "floating">("side");
   const [gridOn, setGridOn] = useState(initialProject.settings?.gridVisible ?? true);
   const [snapOn, setSnapOn] = useState(initialProject.settings?.snapToGrid ?? true);
@@ -104,6 +105,11 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
   const [nodeModalOpen, setNodeModalOpen] = useState(false);
   const [edgeModalOpen, setEdgeModalOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [connectionState, setConnectionState] = useState<{
+    nodeId: string;
+    handleId: string;
+    handleType: string;
+  } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -188,30 +194,119 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
 
   const createEdge = useCallback((edge: FluxoEdgeSerialized) => fluxoEdgeToReactFlowEdge(edge), []);
 
+  const onConnectStart = useCallback(
+    (
+      event: MouseEvent | TouchEvent | null,
+      params: { nodeId: string | null; handleId: string | null; handleType: string | null },
+    ) => {
+      if (!params.nodeId) return;
+      const { nodeId, handleId, handleType } = params;
+      setConnectionState({
+        nodeId,
+        handleId: handleId ?? "auto",
+        handleType: handleType ?? "source",
+      });
+    },
+    [],
+  );
+
+  const onConnectEnd = useCallback(() => {
+    setConnectionState(null);
+  }, []);
+
   const onConnect = useCallback(
     (conn: Connection) => {
-      if (!conn.source || !conn.target) return;
-      snapshot();
-      const id = `edge-${Date.now()}`;
-      const serialized: FluxoEdgeSerialized = {
-        id,
-        source: conn.source,
-        target: conn.target,
-        sourceHandle: (conn.sourceHandle as FluxoEdgeSerialized["sourceHandle"]) ?? "auto",
-        targetHandle: (conn.targetHandle as FluxoEdgeSerialized["targetHandle"]) ?? "auto",
-        label: undefined,
-        hiddenInfo: "",
-        type: "orthogonal",
-        stroke: "solid",
-        hasArrow: true,
-        style: { stroke: "#374151", strokeWidth: 2, strokeDasharray: null, markerEnd: "arrow" },
-        routing: { mode: "auto", points: [], avoidCrossings: true },
-        semantic: { ...DEFAULT_EDGE_SEMANTIC },
-        customFields: [],
-      };
-      setEdges((eds) => addEdge(createEdge(serialized), eds));
+      try {
+        if (!conn.source || !conn.target) return;
+
+        // Determinar direção real baseada no connectionState
+        let source = conn.source;
+        let target = conn.target;
+
+        if (connectionState) {
+          if (connectionState.nodeId === conn.source) {
+            // Manter source/target como estão
+          } else if (connectionState.nodeId === conn.target) {
+            // Inverter source/target
+            [source, target] = [target, source];
+          }
+        }
+
+        // Rejeitar self-loop após calcular a direção real
+        if (source === target) {
+          toast.warning("Conexões para o mesmo bloco não são permitidas");
+          return;
+        }
+
+        snapshot();
+        const id = `edge-${Date.now()}`;
+        const serialized: FluxoEdgeSerialized = {
+          id,
+          source,
+          target,
+          sourceHandle: (conn.sourceHandle as FluxoEdgeSerialized["sourceHandle"]) ?? "auto",
+          targetHandle: (conn.targetHandle as FluxoEdgeSerialized["targetHandle"]) ?? "auto",
+          label: undefined,
+          hiddenInfo: "",
+          type: "orthogonal",
+          stroke: "solid",
+          hasArrow: true,
+          style: { stroke: "#374151", strokeWidth: 2, strokeDasharray: null, markerEnd: "arrow" },
+          routing: { mode: "auto", points: [], avoidCrossings: true },
+          semantic: { ...DEFAULT_EDGE_SEMANTIC },
+          customFields: [],
+        };
+
+        setEdges((eds) => resolveAutoEdges(nodes, addEdge(createEdge(serialized), eds)));
+        setSelectedEdge(null);
+      } finally {
+        setConnectionState(null);
+      }
     },
-    [createEdge, snapshot],
+    [createEdge, nodes, resolveAutoEdges, snapshot, connectionState],
+  );
+
+  const handleNodeClick = useCallback(
+    (_: unknown, node: Node) => {
+      if (tool === "connect") {
+        if (!pendingConnectionSource) {
+          setPendingConnectionSource(node.id);
+          toast.info("Agora escolha o bloco de destino");
+          return;
+        }
+
+        if (pendingConnectionSource === node.id) {
+          toast.warning("Conexões para o mesmo bloco não são permitidas");
+          return;
+        }
+
+        const id = `edge-${Date.now()}`;
+        const serialized: FluxoEdgeSerialized = {
+          id,
+          source: pendingConnectionSource,
+          target: node.id,
+          sourceHandle: "auto",
+          targetHandle: "auto",
+          label: undefined,
+          hiddenInfo: "",
+          type: "orthogonal",
+          stroke: "solid",
+          hasArrow: true,
+          style: { stroke: "#374151", strokeWidth: 2, strokeDasharray: null, markerEnd: "arrow" },
+          routing: { mode: "auto", points: [], avoidCrossings: true },
+          semantic: { ...DEFAULT_EDGE_SEMANTIC },
+          customFields: [],
+        };
+
+        snapshot();
+        setEdges((eds) => resolveAutoEdges(nodes, addEdge(createEdge(serialized), eds)));
+        setPendingConnectionSource(null);
+      } else {
+        setSelectedNode(node);
+        setSelectedEdge(null);
+      }
+    },
+    [tool, pendingConnectionSource, createEdge, nodes, resolveAutoEdges, snapshot],
   );
 
   const addBlock = useCallback(
@@ -245,6 +340,8 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     setEdges(prev.edges);
     setSelectedNode(null);
     setSelectedEdge(null);
+    setConnectionState(null);
+    setPendingConnectionSource(null);
     queueMicrotask(() => {
       isRestoringRef.current = false;
     });
@@ -259,6 +356,8 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     setEdges(next.edges);
     setSelectedNode(null);
     setSelectedEdge(null);
+    setConnectionState(null);
+    setPendingConnectionSource(null);
     queueMicrotask(() => {
       isRestoringRef.current = false;
     });
@@ -288,6 +387,8 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     setSelectedEdge(null);
     setNodeModalOpen(false);
     setEdgeModalOpen(false);
+    setConnectionState(null);
+    setPendingConnectionSource(null);
   }, [edges, nodes, selectedEdge?.id, selectedNode?.id, snapshot]);
 
   const duplicateSelection = useCallback(() => {
@@ -327,6 +428,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     setEdges((eds) => [...eds.map((e) => ({ ...e, selected: false })), ...duplicatedEdges]);
     setSelectedNode(duplicatedNodes[0] ?? null);
     setSelectedEdge(null);
+    setPendingConnectionSource(null);
   }, [edges, nodes, selectedNode?.id, snapshot]);
 
   const selectAll = useCallback(() => {
@@ -334,6 +436,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     setEdges((eds) => eds.map((e) => ({ ...e, selected: true })));
     setSelectedNode(null);
     setSelectedEdge(null);
+    setPendingConnectionSource(null);
   }, []);
 
   const organize = useCallback(
@@ -473,6 +576,8 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           setEdges(rf.edges);
           setSelectedNode(null);
           setSelectedEdge(null);
+          setConnectionState(null);
+          setPendingConnectionSource(null);
           toast.success("Fluxo importado.");
         } catch (error) {
           toast.error((error as Error).message || "Não foi possível importar o fluxo.");
@@ -556,6 +661,8 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         setSelectedEdge(null);
         setNodeModalOpen(false);
         setEdgeModalOpen(false);
+        setConnectionState(null);
+        setPendingConnectionSource(null);
         return;
       }
       if (e.key === "F11") {
@@ -601,23 +708,23 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
       }
       setSelectedNode(null);
       setSelectedEdge(null);
+      setConnectionState(null);
+      setPendingConnectionSource(null);
     },
     [tool, addBlock, screenToFlowPosition],
   );
 
-  const onNodeClick = useCallback((_: unknown, node: Node) => {
-    setSelectedNode(node);
-    setSelectedEdge(null);
-  }, []);
-
   const onEdgeClick = useCallback((_: unknown, edge: Edge) => {
     setSelectedEdge(edge);
     setSelectedNode(null);
+    setConnectionState(null);
+    setPendingConnectionSource(null);
   }, []);
 
   const onNodeDoubleClick = useCallback((_: unknown, node: Node) => {
     setSelectedNode(node);
     setNodeModalOpen(true);
+    setPendingConnectionSource(null);
   }, []);
 
   const onEdgeDoubleClick = useCallback((_: unknown, edge: Edge) => {
@@ -842,9 +949,11 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onConnectStart={onConnectStart}
           onConnect={onConnect}
+          onConnectEnd={onConnectEnd}
           onPaneClick={onPaneClick}
-          onNodeClick={onNodeClick}
+          onNodeClick={handleNodeClick}
           onEdgeClick={onEdgeClick}
           onNodeDoubleClick={onNodeDoubleClick}
           onEdgeDoubleClick={onEdgeDoubleClick}

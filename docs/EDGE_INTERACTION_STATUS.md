@@ -109,13 +109,13 @@ src/lib/flow/edgeRouting.ts
 Funções disponíveis:
 
 ```ts
-getManualRouteControlPoint(sourceNode, targetNode, axis, offset)
-getManualRouteControlPoints(sourceNode, targetNode, options)
-normalizeManualRoutePoints(points)
-replaceManualRoutePoint(points, index, nextPoint)
-insertManualRoutePoint(points, index, point)
-removeManualRoutePoint(points, index)
-nudgeManualRoutePoints(points, delta)
+getManualRouteControlPoint(sourceNode, targetNode, axis, offset);
+getManualRouteControlPoints(sourceNode, targetNode, options);
+normalizeManualRoutePoints(points);
+replaceManualRoutePoint(points, index, nextPoint);
+insertManualRoutePoint(points, index, point);
+removeManualRoutePoint(points, index);
+nudgeManualRoutePoints(points, delta);
 ```
 
 Objetivo:

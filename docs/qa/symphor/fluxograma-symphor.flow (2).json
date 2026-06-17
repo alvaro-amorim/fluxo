@@ -1,0 +1,3594 @@
+{
+  "app": "Fluxo",
+  "schemaVersion": "0.1.0",
+  "project": {
+    "id": "symphor-fluxograma",
+    "name": "Fluxograma Symphor",
+    "description": "Fluxograma didático do Symphor finalizado: jornada do CEO, plataformas, projetos, funcionários digitais, autonomia, auditoria e retornos.",
+    "createdAt": "2026-06-17T18:35:17.425Z",
+    "updatedAt": "2026-06-17T18:58:37.011Z",
+    "background": "#f8fafc",
+    "viewport": {
+      "x": 0,
+      "y": 0,
+      "zoom": 0.65
+    },
+    "settings": {
+      "theme": "light",
+      "gridVisible": true,
+      "snapToGrid": true,
+      "gridSize": 20,
+      "layoutDirection": "vertical"
+    },
+    "metadata": {
+      "tags": ["symphor", "fluxograma", "projetos", "autonomia", "auditoria"],
+      "source": "imported"
+    }
+  },
+  "nodes": [
+    {
+      "id": "ceo",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Você / CEO",
+      "summary": "Único humano real: dá direção, aprova, corrige e valida.",
+      "hiddenInfo": "O Symphor é pensado para o CEO solo. Todos os funcionários reais são você; os demais são funcionários digitais governados.",
+      "position": {
+        "x": 520,
+        "y": 40
+      },
+      "size": {
+        "width": 300,
+        "height": 90
+      },
+      "style": {
+        "backgroundColor": "#fef3c7",
+        "borderColor": "#f59e0b",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "user",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Único humano real: dá direção, aprova, corrige e valida.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": "O objetivo é tirar o CEO do trabalho manual de copiar/colar entre chats, Codex, arquivos, APIs, Telegram e projetos."
+      },
+      "customFields": []
+    },
+    {
+      "id": "choose_channel",
+      "type": "flowNode",
+      "shape": "rectangle",
+      "title": "Escolher plataforma",
+      "summary": "Você fala com o Symphor pelo canal mais adequado.",
+      "hiddenInfo": "O canal muda a profundidade da interface, mas ambos podem iniciar pedidos em linguagem natural.",
+      "position": {
+        "x": 520,
+        "y": 180
+      },
+      "size": {
+        "width": 300,
+        "height": 100
+      },
+      "style": {
+        "backgroundColor": "#fff7ed",
+        "borderColor": "#ea580c",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "split",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Você fala com o Symphor pelo canal mais adequado.",
+        "inputs": [],
+        "outputs": ["Chat Desktop", "Chatbot Telegram"],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "desktop",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Chat Desktop",
+      "summary": "Controle profundo: projetos, arquivos, repositórios, auditoria e configuração.",
+      "hiddenInfo": "Usos: criar projeto do zero, anexar arquivos, conectar GitHub/local, configurar APIs e rotinas, revisar logs, custos, riscos, histórico, funcionários e decisões.",
+      "position": {
+        "x": 120,
+        "y": 340
+      },
+      "size": {
+        "width": 330,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#dbeafe",
+        "borderColor": "#2563eb",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "monitor",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Controle profundo: projetos, arquivos, repositórios, auditoria e configuração.",
+        "inputs": ["texto longo", "arquivos", "repos GitHub", "contexto"],
+        "outputs": ["pedido rico", "projeto conectado"],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "telegram",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Chatbot Telegram",
+      "summary": "Controle rápido: pedidos, alertas, aprovações, evidências, texto e áudio.",
+      "hiddenInfo": "Usos: iniciar pedidos curtos, pedir status, aprovar, reprovar, pausar, continuar, enviar print/evidência, responder com áudio. Botões aparecem só quando ajudam.",
+      "position": {
+        "x": 890,
+        "y": 340
+      },
+      "size": {
+        "width": 330,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#dbeafe",
+        "borderColor": "#2563eb",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "send",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Controle rápido: pedidos, alertas, aprovações, evidências, texto e áudio.",
+        "inputs": [],
+        "outputs": [],
+        "rules": ["linguagem natural prevalece", "evitar logs longos", "evitar JSON técnico"],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "desktop_actions",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "No Desktop você pode",
+      "summary": "Planejar, anexar arquivos, conectar repos, ver logs, custos e auditoria.",
+      "hiddenInfo": "Interface com mais autonomia de visualização e configuração. Ideal para decisões maiores, auditoria, arquivos e projetos técnicos.",
+      "position": {
+        "x": 120,
+        "y": 500
+      },
+      "size": {
+        "width": 330,
+        "height": 120
+      },
+      "style": {
+        "backgroundColor": "#dbeafe",
+        "borderColor": "#2563eb",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "list",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Planejar, anexar arquivos, conectar repos, ver logs, custos e auditoria.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "telegram_actions",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "No Telegram você pode",
+      "summary": "Pedir, aprovar, reprovar, pausar, enviar evidência e receber alertas.",
+      "hiddenInfo": "Exemplos: 'como está a Bolinha?', 'pode seguir', 'não gostei do visual', 'pausa esse projeto', 'cria ideia rápida para a Comerc'.",
+      "position": {
+        "x": 890,
+        "y": 500
+      },
+      "size": {
+        "width": 330,
+        "height": 120
+      },
+      "style": {
+        "backgroundColor": "#dbeafe",
+        "borderColor": "#2563eb",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "message-circle",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Pedir, aprovar, reprovar, pausar, enviar evidência e receber alertas.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "unified_input",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Entrada Unificada",
+      "summary": "Mensagens, áudios, arquivos, prints, links, repos e eventos viram entrada do Symphor.",
+      "hiddenInfo": "Normaliza entradas vindas do Desktop, Telegram, áudio transcrito, arquivos, prints, links de repositório, evidências e eventos internos.",
+      "position": {
+        "x": 520,
+        "y": 670
+      },
+      "size": {
+        "width": 320,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#e0f2fe",
+        "borderColor": "#0284c7",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "inbox",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Mensagens, áudios, arquivos, prints, links, repos e eventos viram entrada do Symphor.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "auto_events",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Eventos automáticos",
+      "summary": "O Symphor também acorda por rotinas, Codex, arquivos, testes, APIs e Sentinel.",
+      "hiddenInfo": "Exemplos: rotina agendada, Codex terminou, arquivo mudou, teste terminou, API sem crédito, alerta Sentinel, projeto parado ou mudança de estado.",
+      "position": {
+        "x": 890,
+        "y": 670
+      },
+      "size": {
+        "width": 330,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#e0f2fe",
+        "borderColor": "#0284c7",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "zap",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "O Symphor também acorda por rotinas, Codex, arquivos, testes, APIs e Sentinel.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "security",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Filtro de segurança e contexto",
+      "summary": "Confere risco, segredo, canal, escopo e intenção antes de seguir.",
+      "hiddenInfo": "Detecta secrets/tokens, aplica redaction, avalia canal seguro, escopo, risco e necessidade de bloqueio ou aprovação.",
+      "position": {
+        "x": 816,
+        "y": 944
+      },
+      "size": {
+        "width": 320,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#fee2e2",
+        "borderColor": "#dc2626",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "shield",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Confere risco, segredo, canal, escopo e intenção antes de seguir.",
+        "inputs": [],
+        "outputs": [],
+        "rules": ["não expor chaves", "não agir fora de escopo", "ações sensíveis passam por gate"],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "event_box",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Caixa de Eventos",
+      "summary": "Fila central de pedidos, retornos, alertas e mudanças de estado.",
+      "hiddenInfo": "Eventos: objetivo do CEO, feedback humano, retorno técnico, rotina agendada, alerta, teste, arquivo novo ou mudança de projeto.",
+      "position": {
+        "x": 520,
+        "y": 990
+      },
+      "size": {
+        "width": 320,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#e0f2fe",
+        "borderColor": "#0284c7",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "tray",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Fila central de pedidos, retornos, alertas e mudanças de estado.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "memory_state",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Memória + Estado atual",
+      "summary": "Consulta visão, regras, projetos, tarefas, custos, riscos, histórico e decisões.",
+      "hiddenInfo": "Memória de produto, operacional, episódica, vetorial e segura. Guarda projetos, objetivos, tarefas, decisões, custos, erros, alertas, artefatos e aprovações.",
+      "position": {
+        "x": 120,
+        "y": 1150
+      },
+      "size": {
+        "width": 330,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#ede9fe",
+        "borderColor": "#7c3aed",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "database",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Consulta visão, regras, projetos, tarefas, custos, riscos, histórico e decisões.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "understand",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Entender conversa e intenção",
+      "summary": "Interpreta o pedido, o projeto provável, o retorno esperado e a urgência.",
+      "hiddenInfo": "Classifica intenção, identifica projeto, urgência, risco, tipo de retorno esperado e se precisa de arquivo, repo, humano ou ferramenta.",
+      "position": {
+        "x": 520,
+        "y": 1150
+      },
+      "size": {
+        "width": 320,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#ede9fe",
+        "borderColor": "#7c3aed",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "brain",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Interpreta o pedido, o projeto provável, o retorno esperado e a urgência.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "project_gate",
+      "type": "flowNode",
+      "shape": "diamond",
+      "title": "Identificar ou criar Projeto",
+      "summary": "Todo pedido cai em projeto existente, novo, absorvido por arquivos ou conectado ao GitHub/local.",
+      "hiddenInfo": "O projeto é o centro do Symphor. Ele organiza memória, objetivo, tarefas, funcionários, custo, risco, artefatos e auditoria.",
+      "position": {
+        "x": 520,
+        "y": 1320
+      },
+      "size": {
+        "width": 340,
+        "height": 120
+      },
+      "style": {
+        "backgroundColor": "#fff7ed",
+        "borderColor": "#ea580c",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "folder-plus",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Todo pedido cai em projeto existente, novo, absorvido por arquivos ou conectado ao GitHub/local.",
+        "inputs": [],
+        "outputs": ["projeto existente", "novo projeto", "absorver arquivos", "conectar repo"],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "new_project",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Criar projeto do zero",
+      "summary": "Você conversa e o Symphor estrutura objetivo, escopo, prioridades e primeiras tarefas.",
+      "hiddenInfo": "Exemplo: 'quero criar um app para controlar margem'. O Symphor pergunta o mínimo necessário e propõe estrutura inicial.",
+      "position": {
+        "x": 60,
+        "y": 1510
+      },
+      "size": {
+        "width": 290,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#dcfce7",
+        "borderColor": "#16a34a",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "sparkles",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Você conversa e o Symphor estrutura objetivo, escopo, prioridades e primeiras tarefas.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "absorb_project",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Absorver projeto por arquivos",
+      "summary": "Você envia materiais e o Symphor transforma em projeto organizado.",
+      "hiddenInfo": "Aceita documentos, prints, referências, propostas, PDFs, roteiros e outros materiais para extrair contexto e criar memória.",
+      "position": {
+        "x": 370,
+        "y": 1510
+      },
+      "size": {
+        "width": 290,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#dcfce7",
+        "borderColor": "#16a34a",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "file-text",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Você envia materiais e o Symphor transforma em projeto organizado.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "connect_repo",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Conectar GitHub / local",
+      "summary": "Você adiciona repo e workspace para o Symphor entender e controlar o projeto.",
+      "hiddenInfo": "Lê estrutura, stack, arquivos, issues, PRs e estado local para operar projetos como Margem App, Rivals, Babubook e outros.",
+      "position": {
+        "x": 680,
+        "y": 1510
+      },
+      "size": {
+        "width": 290,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#dcfce7",
+        "borderColor": "#16a34a",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "github",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Você adiciona repo e workspace para o Symphor entender e controlar o projeto.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "existing_project",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Usar projeto existente",
+      "summary": "O Symphor reconhece Comerc, Bolinha, apps ou outro projeto já registrado.",
+      "hiddenInfo": "Carrega memória e estado do projeto já conhecido.",
+      "position": {
+        "x": 990,
+        "y": 1510
+      },
+      "size": {
+        "width": 290,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#dcfce7",
+        "borderColor": "#16a34a",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "folder",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "O Symphor reconhece Comerc, Bolinha, apps ou outro projeto já registrado.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "projects",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Projetos",
+      "summary": "Centro operacional: tudo é organizado por projeto.",
+      "hiddenInfo": "Projetos são unidades de memória, escopo, tarefas, funcionários, custo, risco, artefatos e histórico.",
+      "position": {
+        "x": 520,
+        "y": 1690
+      },
+      "size": {
+        "width": 340,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#dcfce7",
+        "borderColor": "#16a34a",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "briefcase",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Centro operacional: tudo é organizado por projeto.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "comerc",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Comerc IA / empresa",
+      "summary": "Campanhas, propostas, clientes, roteiros, portfólio e social.",
+      "hiddenInfo": "Funcionários possíveis: Commercial Strategist, Creative Director, Client Success, Proposal Writer, Video Producer, Brand Reviewer, Social Media Planner.",
+      "position": {
+        "x": 60,
+        "y": 1860
+      },
+      "size": {
+        "width": 290,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#dcfce7",
+        "borderColor": "#16a34a",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "megaphone",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Campanhas, propostas, clientes, roteiros, portfólio e social.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "products",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Apps / Web / Info produtos",
+      "summary": "Margem App, Rivals, Babubook e produtos digitais futuros.",
+      "hiddenInfo": "Funcionários possíveis: Product Manager, UX/UI Designer, Tech Lead, Frontend, Backend, QA, Growth, Monetization, Documentation.",
+      "position": {
+        "x": 370,
+        "y": 1860
+      },
+      "size": {
+        "width": 290,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#dcfce7",
+        "borderColor": "#16a34a",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "code",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Margem App, Rivals, Babubook e produtos digitais futuros.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "media",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Mídias sociais / Bolinha",
+      "summary": "Pautas, curiosidades, roteiros, vídeos, thumbnails e análise.",
+      "hiddenInfo": "Funcionários possíveis: Editorial Researcher, Fact Checker, Scriptwriter, Creative Director, Video Producer, Thumbnail/Title, Platform Policy, Analytics.",
+      "position": {
+        "x": 680,
+        "y": 1860
+      },
+      "size": {
+        "width": 290,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#dcfce7",
+        "borderColor": "#16a34a",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "youtube",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Pautas, curiosidades, roteiros, vídeos, thumbnails e análise.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "new_future",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Novo projeto futuro",
+      "summary": "Qualquer novo negócio, app, mídia, automação ou produto pode nascer aqui.",
+      "hiddenInfo": "O Symphor deve expandir sem precisar redesenhar o sistema.",
+      "position": {
+        "x": 990,
+        "y": 1860
+      },
+      "size": {
+        "width": 290,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#dcfce7",
+        "borderColor": "#16a34a",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "plus-circle",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Qualquer novo negócio, app, mídia, automação ou produto pode nascer aqui.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "scope",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Definir objetivo e escopo",
+      "summary": "Organiza o que será feito, limites, prioridade, sucesso esperado e riscos.",
+      "hiddenInfo": "Define entregáveis, critérios de aceite, prazo, fontes, orçamento, riscos, rotinas e necessidade de integração técnica.",
+      "position": {
+        "x": 520,
+        "y": 2030
+      },
+      "size": {
+        "width": 340,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#dcfce7",
+        "borderColor": "#16a34a",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "target",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Organiza o que será feito, limites, prioridade, sucesso esperado e riscos.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "employee_bank",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Banco de Funcionários Digitais",
+      "summary": "Catálogo enxuto de papéis digitais disponíveis para projetos.",
+      "hiddenInfo": "Poucos blocos visuais. Cargos ficam nas observações: orquestrador, produto, operações, automação, tech, QA, segurança, budget, documentação e especialistas por projeto.",
+      "position": {
+        "x": 120,
+        "y": 2200
+      },
+      "size": {
+        "width": 330,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#fae8ff",
+        "borderColor": "#c026d3",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "users",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Catálogo enxuto de papéis digitais disponíveis para projetos.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "competence",
+      "type": "flowNode",
+      "shape": "diamond",
+      "title": "Existe competência suficiente?",
+      "summary": "Decide se usa funcionários existentes ou cria um novo papel digital.",
+      "hiddenInfo": "Se faltar competência, o Symphor propõe criar funcionário com função, escopo, autonomia, ferramentas e gatilhos de aprovação.",
+      "position": {
+        "x": 520,
+        "y": 2200
+      },
+      "size": {
+        "width": 340,
+        "height": 120
+      },
+      "style": {
+        "backgroundColor": "#fff7ed",
+        "borderColor": "#ea580c",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "help-circle",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Decide se usa funcionários existentes ou cria um novo papel digital.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "create_employee",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Criar Funcionário Digital",
+      "summary": "Define função, escopo, autonomia, ferramentas, retorno esperado e quando chamar você.",
+      "hiddenInfo": "Exemplos: Creative Director para Comerc, Fact Checker para Bolinha, Monetization Analyst para apps. Funcionário não é livre; tem limites e gates.",
+      "position": {
+        "x": 890,
+        "y": 2200
+      },
+      "size": {
+        "width": 330,
+        "height": 120
+      },
+      "style": {
+        "backgroundColor": "#fae8ff",
+        "borderColor": "#c026d3",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "user-plus",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Define função, escopo, autonomia, ferramentas, retorno esperado e quando chamar você.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "register_employee",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Registrar Funcionário",
+      "summary": "Salva o novo papel na memória para futuras reuniões.",
+      "hiddenInfo": "Registra nome, papel, área/projeto, responsabilidades, limites, ferramentas, nível de autonomia e escalonamento ao CEO.",
+      "position": {
+        "x": 890,
+        "y": 2370
+      },
+      "size": {
+        "width": 330,
+        "height": 100
+      },
+      "style": {
+        "backgroundColor": "#fae8ff",
+        "borderColor": "#c026d3",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "save",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Salva o novo papel na memória para futuras reuniões.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "call_employees",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Convocar Funcionários do Projeto",
+      "summary": "Escolhe os papéis certos para analisar a demanda.",
+      "hiddenInfo": "Comerc chama estratégia/criação/vídeo; apps chamam produto/UX/tech/QA; Bolinha chama pesquisa/fatos/roteiro/vídeo/política.",
+      "position": {
+        "x": 520,
+        "y": 2390
+      },
+      "size": {
+        "width": 340,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#fae8ff",
+        "borderColor": "#c026d3",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "user-check",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Escolhe os papéis certos para analisar a demanda.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "meeting",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Reunião dos Funcionários Digitais",
+      "summary": "Cada papel avalia, aponta riscos, divergências e recomenda a próxima ação.",
+      "hiddenInfo": "Gera opiniões curtas, consenso, riscos, necessidade de humano e decisão recomendada. Funcionários não executam sem gate.",
+      "position": {
+        "x": 520,
+        "y": 2560
+      },
+      "size": {
+        "width": 340,
+        "height": 120
+      },
+      "style": {
+        "backgroundColor": "#fae8ff",
+        "borderColor": "#c026d3",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "comments",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Cada papel avalia, aponta riscos, divergências e recomenda a próxima ação.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "autonomy",
+      "type": "flowNode",
+      "shape": "diamond",
+      "title": "Decisão de Autonomia",
+      "summary": "Define se o Symphor responde, planeja, trabalha, pergunta ou bloqueia.",
+      "hiddenInfo": "Combina nível de autonomia com regra prática: pode seguir, precisa aprovar ou está bloqueado. Tudo deve ser auditável.",
+      "position": {
+        "x": 520,
+        "y": 2740
+      },
+      "size": {
+        "width": 350,
+        "height": 120
+      },
+      "style": {
+        "backgroundColor": "#fff7ed",
+        "borderColor": "#ea580c",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "git-branch",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Define se o Symphor responde, planeja, trabalha, pergunta ou bloqueia.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "answer",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "N0 — Só responder",
+      "summary": "Status, resumo, dúvida ou motivo de trava.",
+      "hiddenInfo": "Autonomia baixa. Registra pergunta, contexto consultado e resposta.",
+      "position": {
+        "x": -20,
+        "y": 2930
+      },
+      "size": {
+        "width": 250,
+        "height": 100
+      },
+      "style": {
+        "backgroundColor": "#fff7ed",
+        "borderColor": "#ea580c",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "message-square",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Status, resumo, dúvida ou motivo de trava.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "plan",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "N1 — Planejar",
+      "summary": "Plano, briefing, roteiro, checklist ou estratégia.",
+      "hiddenInfo": "Autonomia baixa/média. Planeja sem executar ação sensível.",
+      "position": {
+        "x": 250,
+        "y": 2930
+      },
+      "size": {
+        "width": 250,
+        "height": 100
+      },
+      "style": {
+        "backgroundColor": "#fff7ed",
+        "borderColor": "#ea580c",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "clipboard-list",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Plano, briefing, roteiro, checklist ou estratégia.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "work_alone",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "N2 — Trabalhar sozinho",
+      "summary": "Tarefas seguras, reversíveis e dentro das regras.",
+      "hiddenInfo": "Autonomia média. Organiza informação, gera briefing, cria tarefas, prepara prompts, atualiza estado e opera rotinas de baixo risco.",
+      "position": {
+        "x": 520,
+        "y": 2930
+      },
+      "size": {
+        "width": 250,
+        "height": 100
+      },
+      "style": {
+        "backgroundColor": "#f0fdf4",
+        "borderColor": "#22c55e",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "play",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Tarefas seguras, reversíveis e dentro das regras.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "approval",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "N3 — Pedir aprovação",
+      "summary": "Prepara tudo, mas pergunta antes de ação sensível.",
+      "hiddenInfo": "Usado para publicação, API paga, código importante, comandos, push/deploy, secrets, rotinas e decisões estratégicas.",
+      "position": {
+        "x": 790,
+        "y": 2930
+      },
+      "size": {
+        "width": 250,
+        "height": 100
+      },
+      "style": {
+        "backgroundColor": "#fff7ed",
+        "borderColor": "#ea580c",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "check-circle",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Prepara tudo, mas pergunta antes de ação sensível.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "block",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "N4 — Bloquear",
+      "summary": "Não executa e explica o motivo com alternativa segura.",
+      "hiddenInfo": "Bloqueia por segredo, canal inseguro, custo não autorizado, risco crítico, fora de escopo, publicação sem aprovação ou tentativa de burlar limite.",
+      "position": {
+        "x": 1060,
+        "y": 2930
+      },
+      "size": {
+        "width": 250,
+        "height": 100
+      },
+      "style": {
+        "backgroundColor": "#fef2f2",
+        "borderColor": "#ef4444",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "x-octagon",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Não executa e explica o motivo com alternativa segura.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "approval_message",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Mensagem com opções ao CEO",
+      "summary": "Pergunta em linguagem natural; botões aparecem quando reduzem atrito.",
+      "hiddenInfo": "Exemplo: Aprovar, Reprovar, Pausar, Ver detalhes no Desktop. Pode ser por texto, botão ou áudio.",
+      "position": {
+        "x": 790,
+        "y": 3090
+      },
+      "size": {
+        "width": 290,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#ecfdf5",
+        "borderColor": "#059669",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "list-checks",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Pergunta em linguagem natural; botões aparecem quando reduzem atrito.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "work_panel",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Painel de Trabalho em Andamento",
+      "summary": "Mostra projeto, tarefa, funcionário, autonomia, status, risco, custo e próxima ação.",
+      "hiddenInfo": "Permite saber quando o Symphor está trabalhando e o que está fazendo. Tudo conectado à auditoria.",
+      "position": {
+        "x": 520,
+        "y": 3260
+      },
+      "size": {
+        "width": 350,
+        "height": 120
+      },
+      "style": {
+        "backgroundColor": "#f0fdf4",
+        "borderColor": "#22c55e",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "activity",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Mostra projeto, tarefa, funcionário, autonomia, status, risco, custo e próxima ação.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "tools",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Ferramentas e automações",
+      "summary": "Codex, GitHub, Local Operator, scripts, APIs, Scheduler, Sentinel e mídia.",
+      "hiddenInfo": "Ferramentas são controladas por escopo, budget, gates e auditoria.",
+      "position": {
+        "x": 520,
+        "y": 3440
+      },
+      "size": {
+        "width": 350,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#f1f5f9",
+        "borderColor": "#64748b",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "wrench",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Codex, GitHub, Local Operator, scripts, APIs, Scheduler, Sentinel e mídia.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "dev_tools",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Codex / GitHub / Local",
+      "summary": "Código, repo, issues, patches, testes e arquivos.",
+      "hiddenInfo": "Principalmente para apps/web/info produtos. Não depende do CEO colar retorno manualmente.",
+      "position": {
+        "x": 250,
+        "y": 3610
+      },
+      "size": {
+        "width": 280,
+        "height": 100
+      },
+      "style": {
+        "backgroundColor": "#f1f5f9",
+        "borderColor": "#64748b",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "terminal",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Código, repo, issues, patches, testes e arquivos.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "ops_tools",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "APIs / Scripts / Scheduler / Sentinel",
+      "summary": "Dados, rotinas, orçamento, alertas e monitoramento.",
+      "hiddenInfo": "Principalmente para rotinas, Bolinha, custos, APIs oficiais, monitoramento e alertas.",
+      "position": {
+        "x": 790,
+        "y": 3610
+      },
+      "size": {
+        "width": 280,
+        "height": 100
+      },
+      "style": {
+        "backgroundColor": "#f1f5f9",
+        "borderColor": "#64748b",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "settings",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Dados, rotinas, orçamento, alertas e monitoramento.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "result",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Resultado / Artefato",
+      "summary": "Relatório, roteiro, proposta, issue, mídia, alerta, arquivo ou pergunta ao CEO.",
+      "hiddenInfo": "Materializa o trabalho do Symphor em algo revisável, utilizável ou executável.",
+      "position": {
+        "x": 520,
+        "y": 3780
+      },
+      "size": {
+        "width": 350,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#f0fdf4",
+        "borderColor": "#22c55e",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "package",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Relatório, roteiro, proposta, issue, mídia, alerta, arquivo ou pergunta ao CEO.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "audit",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Auditoria e Histórico",
+      "summary": "Registra pedido, projeto, decisão, autonomia, custo, risco, ação, resultado e retorno.",
+      "hiddenInfo": "Todo fluxo passa aqui: mensagem, projeto, funcionários, decisão, arquivos, repo, custo estimado/real, risco, aprovação, resultado e próximo passo.",
+      "position": {
+        "x": 520,
+        "y": 3950
+      },
+      "size": {
+        "width": 360,
+        "height": 120
+      },
+      "style": {
+        "backgroundColor": "#f8fafc",
+        "borderColor": "#475569",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "history",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Registra pedido, projeto, decisão, autonomia, custo, risco, ação, resultado e retorno.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "return_choice",
+      "type": "flowNode",
+      "shape": "diamond",
+      "title": "Escolher retorno ao CEO",
+      "summary": "Define se a resposta vai detalhada no Desktop ou rápida no Telegram.",
+      "hiddenInfo": "Desktop recebe detalhes; Telegram recebe resumo, alerta, áudio, botões ou link para abrir no Desktop.",
+      "position": {
+        "x": 520,
+        "y": 4130
+      },
+      "size": {
+        "width": 350,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#fff7ed",
+        "borderColor": "#ea580c",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "reply",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Define se a resposta vai detalhada no Desktop ou rápida no Telegram.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "return_desktop",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Retorno no Chat Desktop",
+      "summary": "Relatório completo, arquivos, logs, custos, riscos, histórico e próximos passos.",
+      "hiddenInfo": "Ideal para planos longos, auditoria, revisão de projeto, arquivos, custos, logs e decisões maiores.",
+      "position": {
+        "x": 170,
+        "y": 4310
+      },
+      "size": {
+        "width": 340,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#ecfdf5",
+        "borderColor": "#059669",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "monitor",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Relatório completo, arquivos, logs, custos, riscos, histórico e próximos passos.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "return_telegram",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Retorno no Telegram",
+      "summary": "Resumo curto, alerta, áudio, botões úteis ou link para o Desktop.",
+      "hiddenInfo": "Ideal para status, alertas, aprovações, perguntas rápidas e evidências.",
+      "position": {
+        "x": 850,
+        "y": 4310
+      },
+      "size": {
+        "width": 340,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#ecfdf5",
+        "borderColor": "#059669",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "sm"
+      },
+      "icon": {
+        "type": "default",
+        "name": "send",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Resumo curto, alerta, áudio, botões úteis ou link para o Desktop.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "feedback",
+      "type": "flowNode",
+      "shape": "rounded-rectangle",
+      "title": "Feedback do CEO",
+      "summary": "Você aprova, corrige, reprova, envia evidência ou muda o caminho.",
+      "hiddenInfo": "O feedback vira novo evento e volta ao ciclo. Pode vir por texto, áudio, botão, arquivo ou decisão no Desktop.",
+      "position": {
+        "x": 520,
+        "y": 4490
+      },
+      "size": {
+        "width": 350,
+        "height": 110
+      },
+      "style": {
+        "backgroundColor": "#fef3c7",
+        "borderColor": "#f59e0b",
+        "textColor": "#111827",
+        "borderWidth": 2,
+        "borderRadius": 14,
+        "shadow": "md"
+      },
+      "icon": {
+        "type": "default",
+        "name": "rotate-ccw",
+        "customSrc": null
+      },
+      "semantic": {
+        "objective": "Você aprova, corrige, reprova, envia evidência ou muda o caminho.",
+        "inputs": [],
+        "outputs": [],
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-01",
+      "source": "ceo",
+      "target": "choose_channel",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "inicia pedido",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "inicia pedido",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-02",
+      "source": "choose_channel",
+      "target": "desktop",
+      "sourceHandle": "left",
+      "targetHandle": "right",
+      "label": "controle profundo",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "controle profundo",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-03",
+      "source": "choose_channel",
+      "target": "telegram",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "label": "controle rápido",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "controle rápido",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-04",
+      "source": "desktop",
+      "target": "desktop_actions",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "recursos",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "recursos",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-05",
+      "source": "telegram",
+      "target": "telegram_actions",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "recursos",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "recursos",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-06",
+      "source": "desktop_actions",
+      "target": "unified_input",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "label": "pedido rico",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "pedido rico",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-07",
+      "source": "telegram_actions",
+      "target": "unified_input",
+      "sourceHandle": "left",
+      "targetHandle": "right",
+      "label": "pedido rápido",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "pedido rápido",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-08",
+      "source": "unified_input",
+      "target": "security",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "normalizar",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "normalizar",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-09",
+      "source": "security",
+      "target": "event_box",
+      "sourceHandle": "bottom",
+      "targetHandle": "right",
+      "label": "evento aceito",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "evento aceito",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-10",
+      "source": "auto_events",
+      "target": "event_box",
+      "sourceHandle": "left",
+      "targetHandle": "top",
+      "label": "evento interno",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "evento interno",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-11",
+      "source": "event_box",
+      "target": "memory_state",
+      "sourceHandle": "left",
+      "targetHandle": "right",
+      "label": "consulta",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "consulta",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-12",
+      "source": "memory_state",
+      "target": "understand",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "label": "contexto",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "contexto",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-13",
+      "source": "event_box",
+      "target": "understand",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "evento",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "evento",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-14",
+      "source": "understand",
+      "target": "project_gate",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "intenção",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "intenção",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-15",
+      "source": "project_gate",
+      "target": "new_project",
+      "sourceHandle": "left",
+      "targetHandle": "right",
+      "label": "novo",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "novo",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-16",
+      "source": "project_gate",
+      "target": "absorb_project",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "arquivos",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "arquivos",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-17",
+      "source": "project_gate",
+      "target": "connect_repo",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "repo/local",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "repo/local",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-18",
+      "source": "project_gate",
+      "target": "existing_project",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "label": "existente",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "existente",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-19",
+      "source": "new_project",
+      "target": "projects",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "label": "criado",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "criado",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-20",
+      "source": "absorb_project",
+      "target": "projects",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "absorvido",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "absorvido",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-21",
+      "source": "connect_repo",
+      "target": "projects",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "conectado",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "conectado",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-22",
+      "source": "existing_project",
+      "target": "projects",
+      "sourceHandle": "left",
+      "targetHandle": "right",
+      "label": "carregado",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "carregado",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-23",
+      "source": "projects",
+      "target": "comerc",
+      "sourceHandle": "left",
+      "targetHandle": "right",
+      "label": "empresa",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "empresa",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-24",
+      "source": "projects",
+      "target": "products",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "apps/produtos",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "apps/produtos",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-25",
+      "source": "projects",
+      "target": "media",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "mídia",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "mídia",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-26",
+      "source": "projects",
+      "target": "new_future",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "label": "novo tipo",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "novo tipo",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-27",
+      "source": "comerc",
+      "target": "scope",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "label": "escopo",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "escopo",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-28",
+      "source": "products",
+      "target": "scope",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "escopo",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "escopo",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-29",
+      "source": "media",
+      "target": "scope",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "escopo",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "escopo",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-30",
+      "source": "new_future",
+      "target": "scope",
+      "sourceHandle": "left",
+      "targetHandle": "right",
+      "label": "escopo",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "escopo",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-31",
+      "source": "scope",
+      "target": "competence",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "time necessário",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "time necessário",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-32",
+      "source": "employee_bank",
+      "target": "competence",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "label": "banco",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "banco",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-33",
+      "source": "competence",
+      "target": "call_employees",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "sim",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "sim",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-34",
+      "source": "competence",
+      "target": "create_employee",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "label": "não",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "não",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-35",
+      "source": "create_employee",
+      "target": "register_employee",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "definir",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "definir",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-36",
+      "source": "register_employee",
+      "target": "employee_bank",
+      "sourceHandle": "left",
+      "targetHandle": "right",
+      "label": "salvar",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "salvar",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-37",
+      "source": "register_employee",
+      "target": "call_employees",
+      "sourceHandle": "left",
+      "targetHandle": "right",
+      "label": "usar",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "usar",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-38",
+      "source": "call_employees",
+      "target": "meeting",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "reunir",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "reunir",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-39",
+      "source": "meeting",
+      "target": "autonomy",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "decidir",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "decidir",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-40",
+      "source": "autonomy",
+      "target": "answer",
+      "sourceHandle": "left",
+      "targetHandle": "right",
+      "label": "N0",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "N0",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-41",
+      "source": "autonomy",
+      "target": "plan",
+      "sourceHandle": "left",
+      "targetHandle": "top",
+      "label": "N1",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "N1",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-42",
+      "source": "autonomy",
+      "target": "work_alone",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "N2",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "N2",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-43",
+      "source": "autonomy",
+      "target": "approval",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "N3",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "N3",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-44",
+      "source": "autonomy",
+      "target": "block",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "label": "N4",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "N4",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-45",
+      "source": "answer",
+      "target": "audit",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "registrar",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "registrar",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-46",
+      "source": "plan",
+      "target": "work_panel",
+      "sourceHandle": "bottom",
+      "targetHandle": "left",
+      "label": "plano vira tarefa",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "plano vira tarefa",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-47",
+      "source": "work_alone",
+      "target": "work_panel",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "executar",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "executar",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-48",
+      "source": "approval",
+      "target": "approval_message",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "perguntar",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "perguntar",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-49",
+      "source": "approval_message",
+      "target": "audit",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "registrar pedido",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "registrar pedido",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-50",
+      "source": "block",
+      "target": "audit",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "bloquear",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#ef4444",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "bloquear",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-51",
+      "source": "work_panel",
+      "target": "tools",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "orquestrar",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "orquestrar",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-52",
+      "source": "tools",
+      "target": "dev_tools",
+      "sourceHandle": "left",
+      "targetHandle": "top",
+      "label": "técnico",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "técnico",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-53",
+      "source": "tools",
+      "target": "ops_tools",
+      "sourceHandle": "bottom",
+      "targetHandle": "left",
+      "label": "operação",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "operação",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-54",
+      "source": "dev_tools",
+      "target": "result",
+      "sourceHandle": "bottom",
+      "targetHandle": "left",
+      "label": "resultado",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "resultado",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-55",
+      "source": "ops_tools",
+      "target": "result",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "resultado",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "resultado",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-56",
+      "source": "result",
+      "target": "audit",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "registrar",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "registrar",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-57",
+      "source": "audit",
+      "target": "return_choice",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "label": "retornar",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "retornar",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-58",
+      "source": "return_choice",
+      "target": "return_desktop",
+      "sourceHandle": "left",
+      "targetHandle": "top",
+      "label": "detalhado",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "detalhado",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-59",
+      "source": "return_choice",
+      "target": "return_telegram",
+      "sourceHandle": "right",
+      "targetHandle": "top",
+      "label": "rápido",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "rápido",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-60",
+      "source": "return_desktop",
+      "target": "feedback",
+      "sourceHandle": "bottom",
+      "targetHandle": "left",
+      "label": "decisão",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "decisão",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-61",
+      "source": "return_telegram",
+      "target": "feedback",
+      "sourceHandle": "bottom",
+      "targetHandle": "right",
+      "label": "decisão",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "decisão",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    },
+    {
+      "id": "edge-62",
+      "source": "feedback",
+      "target": "unified_input",
+      "sourceHandle": "top",
+      "targetHandle": "bottom",
+      "label": "novo ciclo",
+      "hiddenInfo": "",
+      "type": "orthogonal",
+      "stroke": "solid",
+      "hasArrow": true,
+      "style": {
+        "stroke": "#374151",
+        "strokeWidth": 2,
+        "strokeDasharray": null,
+        "markerEnd": "arrow"
+      },
+      "routing": {
+        "mode": "auto",
+        "points": [],
+        "avoidCrossings": true
+      },
+      "semantic": {
+        "condition": "novo ciclo",
+        "priority": "normal",
+        "rules": [],
+        "notes": ""
+      },
+      "customFields": []
+    }
+  ]
+}

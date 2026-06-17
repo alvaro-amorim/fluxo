@@ -10,6 +10,7 @@ import {
   type FluxoNodeSerialized,
 } from "./types";
 import { nowIso } from "./defaults";
+import { resolveSerializedEdgeHandles } from "./edgeRouting";
 
 export function fluxoNodeToReactFlowNode(node: FluxoNodeSerialized): Node {
   const data: FluxoNodeData = {
@@ -80,7 +81,9 @@ export function fluxoEdgeToReactFlowEdge(edge: FluxoEdgeSerialized): Edge {
 export function flowProjectToReactFlow(project: FlowProject): { nodes: Node[]; edges: Edge[] } {
   return {
     nodes: project.nodes.map(fluxoNodeToReactFlowNode),
-    edges: project.edges.map(fluxoEdgeToReactFlowEdge),
+    edges: project.edges.map((edge) =>
+      fluxoEdgeToReactFlowEdge(resolveSerializedEdgeHandles(edge, project.nodes)),
+    ),
   };
 }
 

@@ -58,3 +58,5 @@ export {
   slugifyFlowName,
   stringifyFlowFile,
 } from "./serialization";
+export { calculateAutoLayout } from "./layout";
+export type { AutoLayoutOptions } from "./layout";

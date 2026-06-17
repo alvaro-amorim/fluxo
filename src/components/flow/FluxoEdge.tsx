@@ -7,10 +7,11 @@ import {
   type EdgeProps,
 } from "@xyflow/react";
 
+import { normalizeManualRoutePoints, type ManualRoutePoint } from "@/lib/flow/edgeRouting";
 import type { EdgeLineType, FluxoEdgeData } from "@/lib/flow/types";
 
 type EdgePath = [path: string, labelX: number, labelY: number];
-type Point = { x: number; y: number };
+type Point = ManualRoutePoint;
 
 export function FluxoEdge(props: EdgeProps) {
   const {
@@ -27,7 +28,9 @@ export function FluxoEdge(props: EdgeProps) {
   } = props;
   const data = props.data as FluxoEdgeData | undefined;
   const lineType = data?.lineType ?? "orthogonal";
-  const manualPoints = data?.routing?.mode === "manual" ? data.routing.points ?? [] : [];
+  const manualPoints = normalizeManualRoutePoints(
+    data?.routing?.mode === "manual" ? data.routing.points : [],
+  );
   const [path, labelX, labelY] = getFluxoEdgePath({
     lineType,
     sourceX,
@@ -43,24 +46,23 @@ export function FluxoEdge(props: EdgeProps) {
   const hiddenInfo = data?.hiddenInfo;
   const stroke = style?.stroke ?? data?.style?.stroke ?? "#64748b";
   const strokeWidth = Number(style?.strokeWidth ?? data?.style?.strokeWidth ?? 2);
-  const sanitizedManualPoints = sanitizePoints(manualPoints);
 
   return (
     <>
       <BaseEdge
         id={`${id}-interaction`}
         path={path}
-        interactionWidth={28}
+        interactionWidth={30}
         style={{
           stroke: "transparent",
-          strokeWidth: 20,
+          strokeWidth: 22,
         }}
       />
       <BaseEdge
         id={id}
         path={path}
         markerEnd={markerEnd}
-        interactionWidth={22}
+        interactionWidth={24}
         style={{
           stroke: selected ? "var(--brand)" : stroke,
           strokeWidth: selected ? Math.max(strokeWidth + 0.75, 2.75) : strokeWidth,
@@ -69,16 +71,17 @@ export function FluxoEdge(props: EdgeProps) {
         }}
       />
 
-      {sanitizedManualPoints.length > 0 && selected ? (
+      {manualPoints.length > 0 && selected ? (
         <EdgeLabelRenderer>
-          {sanitizedManualPoints.map((point, index) => (
+          {manualPoints.map((point, index) => (
             <div
               key={`${id}-manual-point-${index}`}
-              className="nodrag nopan pointer-events-none absolute flex h-3 w-3 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-background bg-brand text-[7px] font-semibold leading-none text-background shadow-sm"
+              data-route-point-index={index}
+              className="nodrag nopan pointer-events-auto absolute flex h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 cursor-grab items-center justify-center rounded-full border border-background bg-brand text-[7px] font-semibold leading-none text-background shadow-sm transition hover:scale-125 active:cursor-grabbing"
               style={{
                 transform: `translate(-50%, -50%) translate(${point.x}px, ${point.y}px)`,
               }}
-              title={`Ponto manual ${index + 1}`}
+              title={`Ponto manual ${index + 1} — preparado para edição visual futura`}
             >
               {index + 1}
             </div>
@@ -123,10 +126,16 @@ function getFluxoEdgePath({
   targetPosition: EdgeProps["targetPosition"];
   manualPoints: Point[];
 }): EdgePath {
-  const sanitizedManualPoints = sanitizePoints(manualPoints);
+  const normalizedManualPoints = normalizeManualRoutePoints(manualPoints);
 
-  if (sanitizedManualPoints.length > 0) {
-    return getManualPath({ sourceX, sourceY, targetX, targetY, manualPoints: sanitizedManualPoints });
+  if (normalizedManualPoints.length > 0) {
+    return getManualPath({
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+      manualPoints: normalizedManualPoints,
+    });
   }
 
   if (lineType === "straight") {
@@ -175,10 +184,6 @@ function getManualPath({
   const labelPoint = getPathLabelPoint(pathPoints);
 
   return [path, labelPoint.x, labelPoint.y];
-}
-
-function sanitizePoints(points: Point[]): Point[] {
-  return points.filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
 }
 
 function getPathLabelPoint(points: Point[]): Point {

@@ -98,7 +98,7 @@ As setas automáticas devem escolher lados mais naturais em fluxos com blocos de
 
 ---
 
-### 2. Helper para controle manual de rota
+### 2. Helpers para controle manual de rota
 
 Arquivo:
 
@@ -106,19 +106,24 @@ Arquivo:
 src/lib/flow/edgeRouting.ts
 ```
 
-Função adicionada:
+Funções disponíveis:
 
 ```ts
 getManualRouteControlPoint(sourceNode, targetNode, axis, offset)
+getManualRouteControlPoints(sourceNode, targetNode, options)
 ```
 
 Objetivo:
 
 - padronizar a criação de pontos de desvio manual;
 - evitar cálculo duplicado dentro do `FlowEditor`;
+- preparar rotas manuais com 1 ou 2 pontos;
+- criar corredores laterais ou verticais mais previsíveis;
 - preparar melhorias futuras de edição visual dos pontos.
 
-Ela também foi reexportada por:
+A função nova `getManualRouteControlPoints` gera dois pontos quando necessário, formando um caminho mais ortogonal para `Desvio X` e `Desvio Y`.
+
+As funções também foram reexportadas por:
 
 ```txt
 src/lib/flow/schema.ts
@@ -162,7 +167,7 @@ A renderização da seta customizada foi refinada para:
 - aumentar a área de interação da edge para facilitar clique;
 - numerar visualmente os pontos manuais quando a seta está selecionada.
 
-### 2. Clareza da toolbar contextual
+### 2. Clareza e preparação da toolbar contextual
 
 Arquivo:
 
@@ -177,6 +182,13 @@ A toolbar contextual recebeu textos de ajuda mais claros nos botões:
 - `Desvio Y`: cria desvio vertical manual;
 - `Remover`: remove a seleção e informa o atalho `Delete`.
 
+Ela também foi preparada para receber ações opcionais:
+
+- `Editar`;
+- `Duplicar`.
+
+Esses botões só aparecem quando o `FlowEditor` passar os callbacks correspondentes, evitando quebrar a integração atual.
+
 ---
 
 ## Limitações ainda existentes
@@ -184,13 +196,14 @@ A toolbar contextual recebeu textos de ajuda mais claros nos botões:
 Ainda falta evoluir:
 
 ```txt
-1. arrastar pontos intermediários diretamente no canvas;
-2. adicionar/remover múltiplos pontos de rota manual pela interface;
-3. melhorar seleção visual em edges muito próximas;
-4. mostrar botão Editar na toolbar contextual;
-5. melhorar undo/redo específico para mudanças rápidas de rota;
-6. tratar cruzamentos entre várias setas com roteamento mais avançado;
-7. validar visualmente exportação PNG após rotas manuais.
+1. conectar Editar e Duplicar no FlowEditor;
+2. substituir o cálculo local de Desvio X/Y no FlowEditor por getManualRouteControlPoints;
+3. arrastar pontos intermediários diretamente no canvas;
+4. adicionar/remover múltiplos pontos de rota manual pela interface;
+5. melhorar seleção visual em edges muito próximas;
+6. melhorar undo/redo específico para mudanças rápidas de rota;
+7. tratar cruzamentos entre várias setas com roteamento mais avançado;
+8. validar visualmente exportação PNG após rotas manuais.
 ```
 
 ---
@@ -200,8 +213,8 @@ Ainda falta evoluir:
 Ordem sugerida:
 
 ```txt
-1. Integrar getManualRouteControlPoint no FlowEditor para substituir o cálculo local de Desvio X/Y.
-2. Adicionar botão Editar na SelectionToolbar.
+1. Integrar getManualRouteControlPoints no FlowEditor para substituir o cálculo local de Desvio X/Y.
+2. Conectar Editar e Duplicar na SelectionToolbar.
 3. Criar handles visuais arrastáveis para routing.points.
 4. Melhorar histórico para registrar rota manual de forma previsível.
 5. Criar testes manuais guiados para fluxos com retorno, laço e ramificação.

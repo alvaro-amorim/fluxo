@@ -171,20 +171,22 @@ export function EdgePropertiesModal({
               <Row label="Sai do bloco origem">
                 <SegmentedGroup
                   options={HANDLE_OPTIONS}
-                  value={(draft.sourceHandle === "auto" ? "right" : draft.sourceHandle ?? "right") as Exclude<
-                    FlowHandlePosition,
-                    "auto"
-                  >}
+                  value={
+                    (draft.sourceHandle === "auto"
+                      ? "right"
+                      : (draft.sourceHandle ?? "right")) as Exclude<FlowHandlePosition, "auto">
+                  }
                   onChange={(v) => setHandle("sourceHandle", v as FlowHandlePosition)}
                 />
               </Row>
               <Row label="Entra no bloco destino">
                 <SegmentedGroup
                   options={HANDLE_OPTIONS}
-                  value={(draft.targetHandle === "auto" ? "left" : draft.targetHandle ?? "left") as Exclude<
-                    FlowHandlePosition,
-                    "auto"
-                  >}
+                  value={
+                    (draft.targetHandle === "auto"
+                      ? "left"
+                      : (draft.targetHandle ?? "left")) as Exclude<FlowHandlePosition, "auto">
+                  }
                   onChange={(v) => setHandle("targetHandle", v as FlowHandlePosition)}
                 />
               </Row>
@@ -323,7 +325,9 @@ function SegmentedGroup<T extends string>({
             key={o.id}
             onClick={() => onChange(o.id)}
             className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs transition ${
-              active ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              active
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {o.icon}

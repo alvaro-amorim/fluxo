@@ -15,14 +15,18 @@ import {
   type Connection,
   type NodeChange,
   type EdgeChange,
+  type EdgeTypes,
+  type NodeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import { FluxoNode } from "./FluxoNode";
+import { FluxoEdge } from "./FluxoEdge";
 import { Toolbar, type Tool } from "./Toolbar";
 import { NodePropertiesModal } from "./NodePropertiesModal";
 import { EdgePropertiesModal } from "./EdgePropertiesModal";
 import { ShortcutHelpModal } from "./ShortcutHelpModal";
+import { SelectionToolbar } from "./SelectionToolbar";
 import {
   DEFAULT_EDGE_SEMANTIC,
   DEFAULT_NODE_STYLE,
@@ -45,13 +49,10 @@ import {
   projectToFlowFile,
   stringifyFlowFile,
 } from "@/lib/flow/serialization";
-import {
-  applySmartHandlesToReactFlowEdges,
-  resolveReactFlowEdgeHandles,
-} from "@/lib/flow/edgeRouting";
-import { calculateAutoLayout } from "@/lib/flow/layout";
 import { exportFlowPng } from "@/lib/export/exportPng";
 import { setCurrentProject, upsertProject } from "@/lib/flow/store";
+import { calculateAutoLayout } from "@/lib/flow/layout";
+import { applySmartHandlesToReactFlowEdges } from "@/lib/flow/edgeRouting";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, HelpCircle, Palette, Presentation, X } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -66,7 +67,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const nodeTypes = { fluxo: FluxoNode };
+const nodeTypes: NodeTypes = { fluxo: FluxoNode };
+const edgeTypes: EdgeTypes = { fluxo: FluxoEdge };
 
 type FlowSnapshot = { nodes: Node[]; edges: Edge[] };
 
@@ -89,8 +91,6 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
   const initial = useMemo(() => flowProjectToReactFlow(initialProject), [initialProject]);
   const [nodes, setNodes] = useState<Node[]>(initial.nodes);
   const [edges, setEdges] = useState<Edge[]>(initial.edges);
-  const nodesRef = useRef<Node[]>(initial.nodes);
-  const edgesRef = useRef<Edge[]>(initial.edges);
 
   const [tool, setTool] = useState<Tool>("select");
   const [toolbarMode, setToolbarMode] = useState<"side" | "floating">("side");
@@ -113,20 +113,12 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
   const futureRef = useRef<FlowSnapshot[]>([]);
   const isRestoringRef = useRef(false);
 
-  useEffect(() => {
-    nodesRef.current = nodes;
-  }, [nodes]);
-
-  useEffect(() => {
-    edgesRef.current = edges;
-  }, [edges]);
-
   const snapshot = useCallback(() => {
     if (isRestoringRef.current) return;
-    historyRef.current.push({ nodes: nodesRef.current, edges: edgesRef.current });
+    historyRef.current.push({ nodes, edges });
     if (historyRef.current.length > 80) historyRef.current.shift();
     futureRef.current = [];
-  }, []);
+  }, [nodes, edges]);
 
   const persistProject = useCallback((next: FlowProject) => {
     projectRef.current = next;
@@ -158,34 +150,41 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     persistProject(updated);
   }, [nodes, edges, background, gridOn, snapOn, persistProject]);
 
-  const refreshSmartEdges = useCallback((nextNodes: Node[], currentEdges = edgesRef.current) => {
-    const nextEdges = applySmartHandlesToReactFlowEdges(nextNodes, currentEdges);
-    edgesRef.current = nextEdges;
-    setEdges(nextEdges);
-    return nextEdges;
+  const resolveAutoEdges = useCallback((nextNodes: Node[], nextEdges: Edge[]) => {
+    return applySmartHandlesToReactFlowEdges(
+      nextNodes,
+      nextEdges.map((edge) => {
+        const data = edge.data as FluxoEdgeData | undefined;
+        if (data?.routing?.mode !== "auto") return edge;
+
+        return {
+          ...edge,
+          sourceHandle: "auto",
+          targetHandle: "auto",
+          data: {
+            ...data,
+            sourceHandle: "auto",
+            targetHandle: "auto",
+          },
+        };
+      }),
+    ) as Edge[];
   }, []);
 
   const onNodesChange = useCallback(
-    (changes: NodeChange[]) => {
-      const shouldRecalculate = changes.some(
-        (change) => change.type === "position" || change.type === "dimensions",
-      );
-      const nextNodes = applyNodeChanges(changes, nodesRef.current);
-      nodesRef.current = nextNodes;
-      setNodes(nextNodes);
-
-      if (shouldRecalculate) {
-        refreshSmartEdges(nextNodes);
-      }
-    },
-    [refreshSmartEdges],
+    (changes: NodeChange[]) =>
+      setNodes((nds) => {
+        const nextNodes = applyNodeChanges(changes, nds);
+        setEdges((eds) => resolveAutoEdges(nextNodes, eds));
+        return nextNodes;
+      }),
+    [resolveAutoEdges],
   );
 
-  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
-    const nextEdges = applyEdgeChanges(changes, edgesRef.current);
-    edgesRef.current = nextEdges;
-    setEdges(nextEdges);
-  }, []);
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+    [],
+  );
 
   const createEdge = useCallback((edge: FluxoEdgeSerialized) => fluxoEdgeToReactFlowEdge(edge), []);
 
@@ -194,22 +193,12 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
       if (!conn.source || !conn.target) return;
       snapshot();
       const id = `edge-${Date.now()}`;
-      const handles = resolveReactFlowEdgeHandles(
-        {
-          source: conn.source,
-          target: conn.target,
-          sourceHandle: conn.sourceHandle,
-          targetHandle: conn.targetHandle,
-          data: { routing: { mode: "auto", points: [], avoidCrossings: true } },
-        },
-        nodesRef.current,
-      );
       const serialized: FluxoEdgeSerialized = {
         id,
         source: conn.source,
         target: conn.target,
-        sourceHandle: handles.sourceHandle,
-        targetHandle: handles.targetHandle,
+        sourceHandle: (conn.sourceHandle as FluxoEdgeSerialized["sourceHandle"]) ?? "auto",
+        targetHandle: (conn.targetHandle as FluxoEdgeSerialized["targetHandle"]) ?? "auto",
         label: undefined,
         hiddenInfo: "",
         type: "orthogonal",
@@ -220,11 +209,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         semantic: { ...DEFAULT_EDGE_SEMANTIC },
         customFields: [],
       };
-      setEdges((eds) => {
-        const nextEdges = addEdge(createEdge(serialized), eds);
-        edgesRef.current = nextEdges;
-        return nextEdges;
-      });
+      setEdges((eds) => addEdge(createEdge(serialized), eds));
     },
     [createEdge, snapshot],
   );
@@ -246,11 +231,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         height: 80,
         customFields: [],
       };
-      setNodes((nds) => {
-        const nextNodes = [...nds, { id, type: "fluxo", position: pos, data }];
-        nodesRef.current = nextNodes;
-        return nextNodes;
-      });
+      setNodes((nds) => [...nds, { id, type: "fluxo", position: pos, data }]);
     },
     [snapshot],
   );
@@ -258,10 +239,8 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
   const undo = useCallback(() => {
     const prev = historyRef.current.pop();
     if (!prev) return;
-    futureRef.current.push({ nodes: nodesRef.current, edges: edgesRef.current });
+    futureRef.current.push({ nodes, edges });
     isRestoringRef.current = true;
-    nodesRef.current = prev.nodes;
-    edgesRef.current = prev.edges;
     setNodes(prev.nodes);
     setEdges(prev.edges);
     setSelectedNode(null);
@@ -269,15 +248,13 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     queueMicrotask(() => {
       isRestoringRef.current = false;
     });
-  }, []);
+  }, [nodes, edges]);
 
   const redo = useCallback(() => {
     const next = futureRef.current.pop();
     if (!next) return;
-    historyRef.current.push({ nodes: nodesRef.current, edges: edgesRef.current });
+    historyRef.current.push({ nodes, edges });
     isRestoringRef.current = true;
-    nodesRef.current = next.nodes;
-    edgesRef.current = next.edges;
     setNodes(next.nodes);
     setEdges(next.edges);
     setSelectedNode(null);
@@ -285,38 +262,36 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     queueMicrotask(() => {
       isRestoringRef.current = false;
     });
-  }, []);
+  }, [nodes, edges]);
 
   const deleteSelection = useCallback(() => {
     const selectedNodeIds = new Set(
-      nodesRef.current.filter((n) => n.selected || n.id === selectedNode?.id).map((n) => n.id),
+      nodes.filter((n) => n.selected || n.id === selectedNode?.id).map((n) => n.id),
     );
     const selectedEdgeIds = new Set(
-      edgesRef.current.filter((e) => e.selected || e.id === selectedEdge?.id).map((e) => e.id),
+      edges.filter((e) => e.selected || e.id === selectedEdge?.id).map((e) => e.id),
     );
 
     if (!selectedNodeIds.size && !selectedEdgeIds.size) return;
 
     snapshot();
-    const nextNodes = nodesRef.current.filter((n) => !selectedNodeIds.has(n.id));
-    const nextEdges = edgesRef.current.filter(
-      (e) =>
-        !selectedEdgeIds.has(e.id) &&
-        !selectedNodeIds.has(e.source) &&
-        !selectedNodeIds.has(e.target),
+    setNodes((nds) => nds.filter((n) => !selectedNodeIds.has(n.id)));
+    setEdges((eds) =>
+      eds.filter(
+        (e) =>
+          !selectedEdgeIds.has(e.id) &&
+          !selectedNodeIds.has(e.source) &&
+          !selectedNodeIds.has(e.target),
+      ),
     );
-    nodesRef.current = nextNodes;
-    edgesRef.current = nextEdges;
-    setNodes(nextNodes);
-    setEdges(nextEdges);
     setSelectedNode(null);
     setSelectedEdge(null);
     setNodeModalOpen(false);
     setEdgeModalOpen(false);
-  }, [selectedEdge?.id, selectedNode?.id, snapshot]);
+  }, [edges, nodes, selectedEdge?.id, selectedNode?.id, snapshot]);
 
   const duplicateSelection = useCallback(() => {
-    const selectedNodes = nodesRef.current.filter((n) => n.selected || n.id === selectedNode?.id);
+    const selectedNodes = nodes.filter((n) => n.selected || n.id === selectedNode?.id);
     if (!selectedNodes.length) return;
 
     snapshot();
@@ -335,7 +310,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
       } satisfies Node;
     });
 
-    const duplicatedEdges = edgesRef.current
+    const duplicatedEdges = edges
       .filter((edge) => idMap.has(edge.source) && idMap.has(edge.target))
       .map(
         (edge, index) =>
@@ -348,29 +323,15 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           }) satisfies Edge,
       );
 
-    const nextNodes = [
-      ...nodesRef.current.map((n) => ({ ...n, selected: false })),
-      ...duplicatedNodes,
-    ];
-    const nextEdges = [
-      ...edgesRef.current.map((e) => ({ ...e, selected: false })),
-      ...duplicatedEdges,
-    ];
-    nodesRef.current = nextNodes;
-    edgesRef.current = nextEdges;
-    setNodes(nextNodes);
-    setEdges(nextEdges);
+    setNodes((nds) => [...nds.map((n) => ({ ...n, selected: false })), ...duplicatedNodes]);
+    setEdges((eds) => [...eds.map((e) => ({ ...e, selected: false })), ...duplicatedEdges]);
     setSelectedNode(duplicatedNodes[0] ?? null);
     setSelectedEdge(null);
-  }, [selectedNode?.id, snapshot]);
+  }, [edges, nodes, selectedNode?.id, snapshot]);
 
   const selectAll = useCallback(() => {
-    const nextNodes = nodesRef.current.map((n) => ({ ...n, selected: true }));
-    const nextEdges = edgesRef.current.map((e) => ({ ...e, selected: true }));
-    nodesRef.current = nextNodes;
-    edgesRef.current = nextEdges;
-    setNodes(nextNodes);
-    setEdges(nextEdges);
+    setNodes((nds) => nds.map((n) => ({ ...n, selected: true })));
+    setEdges((eds) => eds.map((e) => ({ ...e, selected: true })));
     setSelectedNode(null);
     setSelectedEdge(null);
   }, []);
@@ -378,24 +339,86 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
   const organize = useCallback(
     (dir: FlowLayoutDirection = "horizontal") => {
       snapshot();
-      const nextNodes = calculateAutoLayout(nodesRef.current, edgesRef.current, {
+      const nextNodes = calculateAutoLayout(nodes, edges, {
         direction: dir,
-        layerGap: dir === "compact" ? 200 : 260,
-        nodeGap: dir === "compact" ? 140 : 180,
-        startX: 220,
-        startY: 220,
+        layerGap: dir === "compact" ? 200 : dir === "radial" ? 160 : 220,
+        nodeGap: dir === "compact" ? 120 : 260,
+        startX: 180,
+        startY: 140,
       });
-      nodesRef.current = nextNodes;
       setNodes(nextNodes);
-      refreshSmartEdges(nextNodes);
+      setEdges((eds) => resolveAutoEdges(nextNodes, eds));
       setTimeout(() => fitView({ padding: 0.2, duration: 300 }), 50);
     },
-    [fitView, refreshSmartEdges, snapshot],
+    [edges, nodes, fitView, resolveAutoEdges, snapshot],
+  );
+
+  const updateSelectedEdge = useCallback(
+    (updater: (edge: Edge) => Edge) => {
+      if (!selectedEdge) return;
+      snapshot();
+      setEdges((eds) => {
+        const nextEdges = eds.map((edge) => (edge.id === selectedEdge.id ? updater(edge) : edge));
+        const updatedEdge = nextEdges.find((edge) => edge.id === selectedEdge.id) ?? null;
+        setSelectedEdge(updatedEdge);
+        return resolveAutoEdges(nodes, nextEdges);
+      });
+    },
+    [nodes, resolveAutoEdges, selectedEdge, snapshot],
+  );
+
+  const setSelectedEdgeAutoRouting = useCallback(() => {
+    updateSelectedEdge((edge) => {
+      const data = (edge.data as FluxoEdgeData | undefined) ?? undefined;
+      if (!data) return edge;
+
+      return {
+        ...edge,
+        sourceHandle: "auto",
+        targetHandle: "auto",
+        data: {
+          ...data,
+          sourceHandle: "auto",
+          targetHandle: "auto",
+          routing: { ...(data.routing ?? {}), mode: "auto", points: [] },
+        },
+      };
+    });
+  }, [updateSelectedEdge]);
+
+  const setSelectedEdgeDeviation = useCallback(
+    (axis: "x" | "y") => {
+      updateSelectedEdge((edge) => {
+        const data = (edge.data as FluxoEdgeData | undefined) ?? undefined;
+        if (!data) return edge;
+
+        const source = nodes.find((node) => node.id === edge.source);
+        const target = nodes.find((node) => node.id === edge.target);
+        const midX = ((source?.position.x ?? 0) + (target?.position.x ?? 0)) / 2;
+        const midY = ((source?.position.y ?? 0) + (target?.position.y ?? 0)) / 2;
+        const currentPoint = data.routing?.points?.[0] ?? { x: midX, y: midY };
+        const controlPoint =
+          axis === "x" ? { x: currentPoint.x + 80, y: midY } : { x: midX, y: currentPoint.y + 80 };
+
+        return {
+          ...edge,
+          data: {
+            ...data,
+            routing: {
+              ...(data.routing ?? {}),
+              mode: "manual",
+              points: [controlPoint],
+            },
+          },
+        };
+      });
+    },
+    [nodes, updateSelectedEdge],
   );
 
   const exportJson = useCallback(() => {
     try {
-      const current = reactFlowToFlowProject({ ...projectRef.current, background }, nodesRef.current, edgesRef.current);
+      const current = reactFlowToFlowProject({ ...projectRef.current, background }, nodes, edges);
       const file = projectToFlowFile(current);
       const blob = new Blob([stringifyFlowFile(file)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -408,7 +431,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     } catch (error) {
       toast.error((error as Error).message || "Não foi possível exportar o fluxo.");
     }
-  }, [background]);
+  }, [nodes, edges, background]);
 
   const exportPng = useCallback(async () => {
     try {
@@ -446,8 +469,6 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           setBackground(importedProject.background);
           setGridOn(importedProject.settings?.gridVisible ?? true);
           setSnapOn(importedProject.settings?.snapToGrid ?? true);
-          nodesRef.current = rf.nodes;
-          edgesRef.current = rf.edges;
           setNodes(rf.nodes);
           setEdges(rf.edges);
           setSelectedNode(null);
@@ -608,15 +629,10 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     (data: FluxoNodeData) => {
       if (!selectedNode) return;
       snapshot();
-      const nextNodes = nodesRef.current.map((n) =>
-        n.id === selectedNode.id ? { ...n, data } : n,
-      );
-      nodesRef.current = nextNodes;
-      setNodes(nextNodes);
-      refreshSmartEdges(nextNodes);
+      setNodes((nds) => nds.map((n) => (n.id === selectedNode.id ? { ...n, data } : n)));
       setSelectedNode((n) => (n ? { ...n, data } : n));
     },
-    [refreshSmartEdges, selectedNode, snapshot],
+    [selectedNode, snapshot],
   );
 
   const onDeleteNode = useCallback(() => {
@@ -628,57 +644,39 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     (data: FluxoEdgeData) => {
       if (!selectedEdge) return;
       snapshot();
-      const nextEdges = edgesRef.current.map((edge) => {
-        if (edge.id !== selectedEdge.id) return edge;
-        const routing = data.routing ?? { mode: "auto", points: [], avoidCrossings: true };
-        const handles =
-          routing.mode === "manual"
-            ? {
-                sourceHandle:
-                  data.sourceHandle ??
-                  (edge.sourceHandle as FluxoEdgeSerialized["sourceHandle"]) ??
-                  "right",
-                targetHandle:
-                  data.targetHandle ??
-                  (edge.targetHandle as FluxoEdgeSerialized["targetHandle"]) ??
-                  "left",
-              }
-            : resolveReactFlowEdgeHandles(
-                {
-                  source: edge.source,
-                  target: edge.target,
-                  sourceHandle: data.sourceHandle ?? edge.sourceHandle,
-                  targetHandle: data.targetHandle ?? edge.targetHandle,
-                  data: { ...data, routing },
-                },
-                nodesRef.current,
-              );
-
-        return createEdge({
-          id: edge.id,
-          source: edge.source,
-          target: edge.target,
-          sourceHandle: handles.sourceHandle,
-          targetHandle: handles.targetHandle,
-          label: data.label,
-          hiddenInfo: data.hiddenInfo,
-          type: data.lineType,
-          stroke: data.stroke,
-          hasArrow: data.hasArrow,
-          style: data.style ?? {
-            stroke: "#374151",
-            strokeWidth: 2,
-            strokeDasharray: data.stroke === "dashed" ? "5 4" : null,
-            markerEnd: data.hasArrow ? "arrow" : "none",
-          },
-          routing,
-          semantic: data.semantic,
-          customFields: data.customFields ?? [],
-        });
-      });
-      edgesRef.current = nextEdges;
-      setEdges(nextEdges);
-      setSelectedEdge(null);
+      setEdges((eds) =>
+        eds.map((edge) => {
+          if (edge.id !== selectedEdge.id) return edge;
+          return createEdge({
+            id: edge.id,
+            source: edge.source,
+            target: edge.target,
+            sourceHandle:
+              data.sourceHandle ??
+              (edge.sourceHandle as FluxoEdgeSerialized["sourceHandle"]) ??
+              "auto",
+            targetHandle:
+              data.targetHandle ??
+              (edge.targetHandle as FluxoEdgeSerialized["targetHandle"]) ??
+              "auto",
+            label: data.label,
+            hiddenInfo: data.hiddenInfo,
+            type: data.lineType,
+            stroke: data.stroke,
+            hasArrow: data.hasArrow,
+            style: data.style ?? {
+              stroke: "#374151",
+              strokeWidth: 2,
+              strokeDasharray: data.stroke === "dashed" ? "5 4" : null,
+              markerEnd: data.hasArrow ? "arrow" : "none",
+            },
+            routing: data.routing ?? { mode: "auto", points: [], avoidCrossings: true },
+            semantic: data.semantic,
+            customFields: data.customFields ?? [],
+          });
+        }),
+      );
+      setSelectedEdge((edge) => (edge ? { ...edge, data, label: data.label } : edge));
     },
     [createEdge, selectedEdge, snapshot],
   );
@@ -792,7 +790,9 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-[160px]">
-                <DropdownMenuItem onClick={() => organize("horizontal")}>Horizontal</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => organize("horizontal")}>
+                  Horizontal
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => organize("vertical")}>Vertical</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => organize("radial")}>Radial</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => organize("compact")}>Compacto</DropdownMenuItem>
@@ -854,6 +854,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
             setSelectedEdge(selectedEdges.length === 1 ? selectedEdges[0]! : null);
           }}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           snapToGrid={snapOn}
           snapGrid={[16, 16]}
           fitView
@@ -877,6 +878,17 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           />
         </ReactFlow>
       </div>
+
+      {!presentation ? (
+        <SelectionToolbar
+          visible={Boolean(selectedNode || selectedEdge)}
+          hasEdgeSelection={Boolean(selectedEdge)}
+          onAuto={setSelectedEdgeAutoRouting}
+          onDeviationX={() => setSelectedEdgeDeviation("x")}
+          onDeviationY={() => setSelectedEdgeDeviation("y")}
+          onRemove={deleteSelection}
+        />
+      ) : null}
 
       <Toolbar
         mode={toolbarMode}

@@ -36,16 +36,17 @@ export function calculateAutoLayout(
     const centeredIndex = siblingIndex - (siblings.length - 1) / 2;
     const size = getNodeSize(node);
 
-    const position =
-      resolved.direction === "horizontal"
-        ? {
-            x: resolved.startX + level * resolved.layerGap,
-            y: resolved.startY + centeredIndex * resolved.nodeGap,
-          }
-        : {
-            x: resolved.startX + centeredIndex * resolved.nodeGap,
-            y: resolved.startY + level * resolved.layerGap,
-          };
+    const position = getLayoutPosition({
+      direction: resolved.direction,
+      level,
+      siblingIndex,
+      siblingCount: siblings.length,
+      centeredIndex,
+      layerGap: resolved.layerGap,
+      nodeGap: resolved.nodeGap,
+      startX: resolved.startX,
+      startY: resolved.startY,
+    });
 
     return {
       ...node,
@@ -106,6 +107,51 @@ function groupNodesByLevel(nodes: Node[], levels: Map<string, number>) {
     groups.set(level, existing);
     return groups;
   }, new Map<number, Node[]>());
+}
+
+function getLayoutPosition({
+  direction,
+  level,
+  siblingIndex,
+  siblingCount,
+  centeredIndex,
+  layerGap,
+  nodeGap,
+  startX,
+  startY,
+}: {
+  direction: FlowLayoutDirection;
+  level: number;
+  siblingIndex: number;
+  siblingCount: number;
+  centeredIndex: number;
+  layerGap: number;
+  nodeGap: number;
+  startX: number;
+  startY: number;
+}) {
+  if (direction === "radial") {
+    const count = Math.max(siblingCount, 1);
+    const angle = (siblingIndex / count) * Math.PI * 2;
+    const radius = 120 + level * layerGap;
+
+    return {
+      x: startX + 320 + Math.cos(angle) * radius,
+      y: startY + 180 + Math.sin(angle) * radius,
+    };
+  }
+
+  if (direction === "vertical") {
+    return {
+      x: startX + centeredIndex * nodeGap,
+      y: startY + level * layerGap,
+    };
+  }
+
+  return {
+    x: startX + level * layerGap,
+    y: startY + centeredIndex * nodeGap,
+  };
 }
 
 function getNodeSize(node: Node) {

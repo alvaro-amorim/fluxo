@@ -57,7 +57,8 @@ function getFullFlowExportOptions(
   }
 
   const computedTransform = getComputedStyle(viewportElement).transform;
-  const originalTransform = computedTransform && computedTransform !== "none" ? computedTransform : "";
+  const originalTransform =
+    computedTransform && computedTransform !== "none" ? computedTransform : "";
   const width = Math.ceil(nodeBounds.width + margin * 2);
   const height = Math.ceil(nodeBounds.height + margin * 2);
   const translateX = margin - nodeBounds.x;
@@ -81,7 +82,9 @@ function getFullFlowExportOptions(
 
 function getNodeBounds(flowElement: HTMLElement) {
   const flowRect = flowElement.getBoundingClientRect();
-  const nodeElements = Array.from(flowElement.querySelectorAll(".react-flow__node")) as HTMLElement[];
+  const nodeElements = Array.from(
+    flowElement.querySelectorAll(".react-flow__node"),
+  ) as HTMLElement[];
 
   if (nodeElements.length === 0) {
     return null;

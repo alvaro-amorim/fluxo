@@ -6,27 +6,27 @@ import {
   getStraightPath,
   type EdgeProps,
 } from "@xyflow/react";
-import type { FluxoEdgeData } from "@/lib/flow/types";
 
-export function FluxoEdge({
-  id,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  sourcePosition,
-  targetPosition,
-  markerEnd,
-  style,
-  selected,
-  data,
-}: EdgeProps) {
-  const edgeData = data as FluxoEdgeData | undefined;
-  const lineType = edgeData?.lineType ?? "orthogonal";
-  const routingPoints =
-    edgeData?.routing?.mode === "manual" ? (edgeData.routing.points ?? []) : [];
+import type { EdgeLineType, FluxoEdgeData } from "@/lib/flow/types";
 
-  const [defaultPath, defaultLabelX, defaultLabelY] = getDefaultPath({
+type EdgePath = [path: string, labelX: number, labelY: number];
+
+export function FluxoEdge(props: EdgeProps) {
+  const {
+    id,
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+    markerEnd,
+    style,
+    selected,
+  } = props;
+  const data = props.data as FluxoEdgeData | undefined;
+  const lineType = data?.lineType ?? "orthogonal";
+  const [path, labelX, labelY] = getFluxoEdgePath({
     lineType,
     sourceX,
     sourceY,
@@ -34,18 +34,11 @@ export function FluxoEdge({
     targetY,
     sourcePosition,
     targetPosition,
+    controlPoint: data?.routing?.mode === "manual" ? data.routing.points?.[0] : undefined,
   });
 
-  const manualPath = routingPoints.length
-    ? buildPolylinePath(sourceX, sourceY, targetX, targetY, routingPoints)
-    : null;
-  const labelPoint = routingPoints.length
-    ? getPolylineLabelPoint(sourceX, sourceY, targetX, targetY, routingPoints)
-    : { x: defaultLabelX, y: defaultLabelY };
-
-  const path = manualPath ?? defaultPath;
-  const label = edgeData?.label;
-  const hiddenInfo = edgeData?.hiddenInfo;
+  const label = data?.label;
+  const hiddenInfo = data?.hiddenInfo;
 
   return (
     <>
@@ -53,50 +46,25 @@ export function FluxoEdge({
         id={id}
         path={path}
         markerEnd={markerEnd}
+        interactionWidth={18}
         style={{
-          ...style,
-          strokeWidth: selected ? 3 : (style?.strokeWidth ?? 2),
-          filter: selected ? "drop-shadow(0 0 2px rgba(234, 88, 12, 0.45))" : undefined,
+          stroke: selected ? "var(--brand)" : (style?.stroke ?? "#64748b"),
+          strokeWidth: selected ? 2.5 : (style?.strokeWidth ?? 2),
+          strokeDasharray: style?.strokeDasharray,
         }}
       />
-
-      <path
-        d={path}
-        fill="none"
-        stroke="transparent"
-        strokeWidth={18}
-        className="react-flow__edge-interaction"
-      />
-
-      {routingPoints.length ? (
-        <EdgeLabelRenderer>
-          {routingPoints.map((point, index) => (
-            <div
-              key={`${id}-point-${index}`}
-              className="nodrag nopan pointer-events-none absolute h-2.5 w-2.5 rounded-full border border-brand bg-background shadow-sm"
-              style={{
-                transform: `translate(-50%, -50%) translate(${point.x}px, ${point.y}px)`,
-              }}
-              title="Ponto manual da rota"
-            />
-          ))}
-        </EdgeLabelRenderer>
-      ) : null}
 
       {label || hiddenInfo ? (
         <EdgeLabelRenderer>
           <div
-            className={`nodrag nopan pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 rounded-full border px-2 py-0.5 text-[10px] shadow-sm backdrop-blur transition ${
-              selected
-                ? "border-brand bg-brand text-brand-foreground"
-                : "border-border bg-background/90 text-foreground"
-            }`}
+            className="nodrag nopan absolute max-w-[220px] -translate-x-1/2 -translate-y-1/2 rounded-md border border-border bg-card px-2 py-1 text-[11px] text-foreground shadow-sm"
             style={{
-              transform: `translate(-50%, -50%) translate(${labelPoint.x}px, ${labelPoint.y}px)`,
+              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+              pointerEvents: "all",
             }}
-            title={hiddenInfo || label || "Conexão"}
+            title={hiddenInfo || undefined}
           >
-            {label || "..."}
+            {label ? <span>{label}</span> : <span className="text-muted-foreground">Info</span>}
           </div>
         </EdgeLabelRenderer>
       ) : null}
@@ -104,7 +72,7 @@ export function FluxoEdge({
   );
 }
 
-function getDefaultPath({
+function getFluxoEdgePath({
   lineType,
   sourceX,
   sourceY,
@@ -112,54 +80,66 @@ function getDefaultPath({
   targetY,
   sourcePosition,
   targetPosition,
+  controlPoint,
 }: {
-  lineType: string;
+  lineType: EdgeLineType;
   sourceX: number;
   sourceY: number;
   targetX: number;
   targetY: number;
   sourcePosition: EdgeProps["sourcePosition"];
   targetPosition: EdgeProps["targetPosition"];
-}) {
+  controlPoint?: { x: number; y: number };
+}): EdgePath {
   if (lineType === "straight") {
     return getStraightPath({ sourceX, sourceY, targetX, targetY });
   }
 
-  if (lineType === "bezier" || lineType === "smooth") {
-    return getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition });
+  if (lineType === "bezier") {
+    return getBezierPath({
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+      sourcePosition,
+      targetPosition,
+    });
   }
 
-  return getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition });
-}
-
-function buildPolylinePath(
-  sourceX: number,
-  sourceY: number,
-  targetX: number,
-  targetY: number,
-  points: Array<{ x: number; y: number }>,
-) {
-  const segments = [`M ${sourceX} ${sourceY}`];
-  for (const point of points) {
-    segments.push(`L ${point.x} ${point.y}`);
+  if (controlPoint) {
+    return getManualPath({ sourceX, sourceY, targetX, targetY, controlPoint });
   }
-  segments.push(`L ${targetX} ${targetY}`);
-  return segments.join(" ");
+
+  return getSmoothStepPath({
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+    borderRadius: 12,
+  });
 }
 
-function getPolylineLabelPoint(
-  sourceX: number,
-  sourceY: number,
-  targetX: number,
-  targetY: number,
-  points: Array<{ x: number; y: number }>,
-) {
-  const full = [{ x: sourceX, y: sourceY }, ...points, { x: targetX, y: targetY }];
-  const middleIndex = Math.max(0, Math.floor((full.length - 1) / 2));
-  const a = full[middleIndex];
-  const b = full[middleIndex + 1] ?? a;
-  return {
-    x: (a.x + b.x) / 2,
-    y: (a.y + b.y) / 2,
-  };
+function getManualPath({
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  controlPoint,
+}: {
+  sourceX: number;
+  sourceY: number;
+  targetX: number;
+  targetY: number;
+  controlPoint: { x: number; y: number };
+}): EdgePath {
+  const midX = (sourceX + targetX) / 2;
+  const midY = (sourceY + targetY) / 2;
+  const useXDeviation = Math.abs(controlPoint.x - midX) >= Math.abs(controlPoint.y - midY);
+  const path = useXDeviation
+    ? `M ${sourceX},${sourceY} L ${controlPoint.x},${sourceY} L ${controlPoint.x},${targetY} L ${targetX},${targetY}`
+    : `M ${sourceX},${sourceY} L ${sourceX},${controlPoint.y} L ${targetX},${controlPoint.y} L ${targetX},${targetY}`;
+
+  return [path, midX, midY];
 }

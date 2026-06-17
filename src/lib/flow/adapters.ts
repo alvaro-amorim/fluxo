@@ -60,7 +60,7 @@ export function fluxoEdgeToReactFlowEdge(edge: FluxoEdgeSerialized): Edge {
     sourceHandle: edge.sourceHandle,
     targetHandle: edge.targetHandle,
     label: edge.label,
-    type: "fluxoEdge",
+    type: "fluxo",
     markerEnd: hasArrow
       ? {
           type: MarkerType.ArrowClosed,

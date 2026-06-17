@@ -113,15 +113,12 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     futureRef.current = [];
   }, [nodes, edges]);
 
-  const persistProject = useCallback(
-    (next: FlowProject) => {
-      projectRef.current = next;
-      setProject(next);
-      setCurrentProject(next);
-      upsertProject(next);
-    },
-    [],
-  );
+  const persistProject = useCallback((next: FlowProject) => {
+    projectRef.current = next;
+    setProject(next);
+    setCurrentProject(next);
+    upsertProject(next);
+  }, []);
 
   useEffect(() => {
     const updated = reactFlowToFlowProject(
@@ -235,8 +232,12 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
   }, [nodes, edges]);
 
   const deleteSelection = useCallback(() => {
-    const selectedNodeIds = new Set(nodes.filter((n) => n.selected || n.id === selectedNode?.id).map((n) => n.id));
-    const selectedEdgeIds = new Set(edges.filter((e) => e.selected || e.id === selectedEdge?.id).map((e) => e.id));
+    const selectedNodeIds = new Set(
+      nodes.filter((n) => n.selected || n.id === selectedNode?.id).map((n) => n.id),
+    );
+    const selectedEdgeIds = new Set(
+      edges.filter((e) => e.selected || e.id === selectedEdge?.id).map((e) => e.id),
+    );
 
     if (!selectedNodeIds.size && !selectedEdgeIds.size) return;
 
@@ -278,13 +279,16 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
 
     const duplicatedEdges = edges
       .filter((edge) => idMap.has(edge.source) && idMap.has(edge.target))
-      .map((edge, index) => ({
-        ...edge,
-        id: `edge-${timestamp}-${index}`,
-        source: idMap.get(edge.source)!,
-        target: idMap.get(edge.target)!,
-        selected: true,
-      } satisfies Edge));
+      .map(
+        (edge, index) =>
+          ({
+            ...edge,
+            id: `edge-${timestamp}-${index}`,
+            source: idMap.get(edge.source)!,
+            target: idMap.get(edge.target)!,
+            selected: true,
+          }) satisfies Edge,
+      );
 
     setNodes((nds) => [...nds.map((n) => ({ ...n, selected: false })), ...duplicatedNodes]);
     setEdges((eds) => [...eds.map((e) => ({ ...e, selected: false })), ...duplicatedEdges]);
@@ -329,7 +333,10 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
       const gapY = dir === "compact" ? 120 : 160;
       setNodes((nds) =>
         nds.map((n) => {
-          const layer = Math.max(layers.findIndex((l) => l.includes(n.id)), 0);
+          const layer = Math.max(
+            layers.findIndex((l) => l.includes(n.id)),
+            0,
+          );
           const indexIn = layers[layer]?.indexOf(n.id) ?? 0;
           let x = 80;
           let y = 80;
@@ -388,43 +395,50 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
 
   const triggerImport = useCallback(() => fileInputRef.current?.click(), []);
 
-  const onImportFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const onImportFile = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const parsed = parseFlowFileJson(String(reader.result));
-      if (!parsed.ok || !parsed.file) {
-        toast.error(parsed.error ?? "Arquivo inválido.");
-        return;
-      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const parsed = parseFlowFileJson(String(reader.result));
+        if (!parsed.ok || !parsed.file) {
+          toast.error(parsed.error ?? "Arquivo inválido.");
+          return;
+        }
 
-      try {
-        snapshot();
-        const importedProject = flowFileToProject(parsed.file);
-        const rf = flowProjectToReactFlow(importedProject);
-        persistProject(importedProject);
-        setBackground(importedProject.background);
-        setGridOn(importedProject.settings?.gridVisible ?? true);
-        setSnapOn(importedProject.settings?.snapToGrid ?? true);
-        setNodes(rf.nodes);
-        setEdges(rf.edges);
-        setSelectedNode(null);
-        setSelectedEdge(null);
-        toast.success("Fluxo importado.");
-      } catch (error) {
-        toast.error((error as Error).message || "Não foi possível importar o fluxo.");
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = "";
-  }, [persistProject, snapshot]);
+        try {
+          snapshot();
+          const importedProject = flowFileToProject(parsed.file);
+          const rf = flowProjectToReactFlow(importedProject);
+          persistProject(importedProject);
+          setBackground(importedProject.background);
+          setGridOn(importedProject.settings?.gridVisible ?? true);
+          setSnapOn(importedProject.settings?.snapToGrid ?? true);
+          setNodes(rf.nodes);
+          setEdges(rf.edges);
+          setSelectedNode(null);
+          setSelectedEdge(null);
+          toast.success("Fluxo importado.");
+        } catch (error) {
+          toast.error((error as Error).message || "Não foi possível importar o fluxo.");
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = "";
+    },
+    [persistProject, snapshot],
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+      if (
+        target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+      )
+        return;
 
       const ctrl = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
@@ -584,8 +598,14 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
             id: edge.id,
             source: edge.source,
             target: edge.target,
-            sourceHandle: data.sourceHandle ?? (edge.sourceHandle as FluxoEdgeSerialized["sourceHandle"]) ?? "auto",
-            targetHandle: data.targetHandle ?? (edge.targetHandle as FluxoEdgeSerialized["targetHandle"]) ?? "auto",
+            sourceHandle:
+              data.sourceHandle ??
+              (edge.sourceHandle as FluxoEdgeSerialized["sourceHandle"]) ??
+              "auto",
+            targetHandle:
+              data.targetHandle ??
+              (edge.targetHandle as FluxoEdgeSerialized["targetHandle"]) ??
+              "auto",
             label: data.label,
             hiddenInfo: data.hiddenInfo,
             type: data.lineType,
@@ -691,18 +711,20 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
                     Predefinidos
                   </Label>
                   <div className="mt-2 grid grid-cols-6 gap-1.5">
-                    {["#ffffff", "#fafaf7", "#f7f1e6", "#e0eefb", "#ece6f5", "#0f172a"].map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => setBackground(color)}
-                        className={`h-8 rounded-md border transition ${
-                          background === color
-                            ? "border-foreground ring-2 ring-foreground/20"
-                            : "border-border hover:border-foreground/40"
-                        }`}
-                        style={{ background: color }}
-                      />
-                    ))}
+                    {["#ffffff", "#fafaf7", "#f7f1e6", "#e0eefb", "#ece6f5", "#0f172a"].map(
+                      (color) => (
+                        <button
+                          key={color}
+                          onClick={() => setBackground(color)}
+                          className={`h-8 rounded-md border transition ${
+                            background === color
+                              ? "border-foreground ring-2 ring-foreground/20"
+                              : "border-border hover:border-foreground/40"
+                          }`}
+                          style={{ background: color }}
+                        />
+                      ),
+                    )}
                   </div>
                 </div>
               </PopoverContent>
@@ -715,7 +737,9 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-[160px]">
-                <DropdownMenuItem onClick={() => organize("horizontal")}>Horizontal</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => organize("horizontal")}>
+                  Horizontal
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => organize("vertical")}>Vertical</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => organize("radial")}>Radial</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => organize("compact")}>Compacto</DropdownMenuItem>
@@ -783,15 +807,19 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           style={{ backgroundColor: background }}
           proOptions={{ hideAttribution: true }}
         >
-          {gridOn ? <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#cbd5e1" /> : null}
+          {gridOn ? (
+            <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#cbd5e1" />
+          ) : null}
           <Controls position="bottom-right" showInteractive={false} className="!shadow-sm" />
           <MiniMap
             position="bottom-left"
             pannable
             zoomable
             maskColor="rgba(15,23,42,0.04)"
-            nodeColor={(node) => ((node.data as FluxoNodeData)?.style?.backgroundColor ?? "#ffffff")}
-            nodeStrokeColor={(node) => ((node.data as FluxoNodeData)?.style?.borderColor ?? "#d1d5db")}
+            nodeColor={(node) => (node.data as FluxoNodeData)?.style?.backgroundColor ?? "#ffffff"}
+            nodeStrokeColor={(node) =>
+              (node.data as FluxoNodeData)?.style?.borderColor ?? "#d1d5db"
+            }
             style={{ width: 160, height: 110 }}
           />
         </ReactFlow>

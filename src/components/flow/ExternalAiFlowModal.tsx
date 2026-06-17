@@ -9,7 +9,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Copy, Download, Check, AlertCircle } from "lucide-react";
-import { AI_PROMPT, EXAMPLE_FLOW_FILE, validateFlowFile, flowFileToProject } from "@/lib/flow/example";
+import {
+  AI_PROMPT,
+  EXAMPLE_FLOW_FILE,
+  validateFlowFile,
+  flowFileToProject,
+} from "@/lib/flow/example";
 import type { FlowProject } from "@/lib/flow/types";
 import { toast } from "sonner";
 
@@ -101,7 +106,11 @@ export function ExternalAiFlowModal({
               <span className="text-xs font-medium text-muted-foreground">Prompt pronto</span>
               <div className="flex gap-2">
                 <Button size="sm" variant="ghost" onClick={copyPrompt}>
-                  {copied ? <Check className="mr-1 h-3.5 w-3.5" /> : <Copy className="mr-1 h-3.5 w-3.5" />}
+                  {copied ? (
+                    <Check className="mr-1 h-3.5 w-3.5" />
+                  ) : (
+                    <Copy className="mr-1 h-3.5 w-3.5" />
+                  )}
                   Copiar prompt
                 </Button>
                 <Button size="sm" variant="ghost" onClick={downloadExample}>
@@ -111,7 +120,7 @@ export function ExternalAiFlowModal({
               </div>
             </div>
             <pre className="max-h-44 overflow-auto whitespace-pre-wrap px-3 py-2 text-xs leading-relaxed text-foreground/80">
-{AI_PROMPT}
+              {AI_PROMPT}
             </pre>
           </section>
 
@@ -148,7 +157,7 @@ export function ExternalAiFlowModal({
               Exemplo do formato esperado
             </summary>
             <pre className="max-h-48 overflow-auto px-3 pb-3 text-[10.5px] leading-relaxed text-foreground/70">
-{JSON.stringify(EXAMPLE_FLOW_FILE, null, 2)}
+              {JSON.stringify(EXAMPLE_FLOW_FILE, null, 2)}
             </pre>
           </details>
 

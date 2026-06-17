@@ -70,7 +70,9 @@ export function nowIso() {
   return new Date().toISOString();
 }
 
-export function createDefaultNode(overrides: Partial<FluxoNodeSerialized> = {}): FluxoNodeSerialized {
+export function createDefaultNode(
+  overrides: Partial<FluxoNodeSerialized> = {},
+): FluxoNodeSerialized {
   return {
     id: overrides.id ?? createFlowId("node"),
     type: overrides.type ?? "flowNode",
@@ -87,7 +89,9 @@ export function createDefaultNode(overrides: Partial<FluxoNodeSerialized> = {}):
   };
 }
 
-export function createDefaultEdge(overrides: Partial<FluxoEdgeSerialized> = {}): FluxoEdgeSerialized {
+export function createDefaultEdge(
+  overrides: Partial<FluxoEdgeSerialized> = {},
+): FluxoEdgeSerialized {
   return {
     id: overrides.id ?? createFlowId("edge"),
     source: overrides.source ?? "",

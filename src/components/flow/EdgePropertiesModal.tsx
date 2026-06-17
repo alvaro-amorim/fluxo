@@ -1,10 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -128,15 +123,10 @@ export function EdgePropertiesModal({
               </div>
               <div>
                 <div className="text-sm font-medium">Mostrar ponta de seta</div>
-                <div className="text-xs text-muted-foreground">
-                  Conexão direcional ou simples
-                </div>
+                <div className="text-xs text-muted-foreground">Conexão direcional ou simples</div>
               </div>
             </div>
-            <Switch
-              checked={draft.hasArrow}
-              onCheckedChange={(v) => update({ hasArrow: v })}
-            />
+            <Switch checked={draft.hasArrow} onCheckedChange={(v) => update({ hasArrow: v })} />
           </div>
 
           <Row label="Condição" hint="Quando este caminho é percorrido">
@@ -267,24 +257,38 @@ function SegmentedGroup<T extends string>({
   );
 }
 
-function LineGlyph({
-  lineType,
-  stroke,
-}: {
-  lineType: EdgeLineType;
-  stroke: EdgeStrokeType;
-}) {
+function LineGlyph({ lineType, stroke }: { lineType: EdgeLineType; stroke: EdgeStrokeType }) {
   const dash = stroke === "dashed" ? "4 3" : undefined;
   return (
     <svg viewBox="0 0 24 12" className="h-3 w-6 text-current">
       {lineType === "straight" && (
-        <line x1="1" y1="6" x2="23" y2="6" stroke="currentColor" strokeWidth="1.5" strokeDasharray={dash} />
+        <line
+          x1="1"
+          y1="6"
+          x2="23"
+          y2="6"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeDasharray={dash}
+        />
       )}
       {lineType === "orthogonal" && (
-        <path d="M1 10 L1 6 L23 6 L23 2" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray={dash} />
+        <path
+          d="M1 10 L1 6 L23 6 L23 2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeDasharray={dash}
+        />
       )}
       {lineType === "bezier" && (
-        <path d="M1 10 C 8 10, 16 2, 23 2" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray={dash} />
+        <path
+          d="M1 10 C 8 10, 16 2, 23 2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeDasharray={dash}
+        />
       )}
     </svg>
   );
@@ -311,20 +315,35 @@ function EdgePreview({
         </defs>
         {lineType === "straight" && (
           <line
-            x1="2" y1="8" x2="78" y2="8"
-            stroke="currentColor" strokeWidth="1.6" strokeDasharray={dash}
+            x1="2"
+            y1="8"
+            x2="78"
+            y2="8"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeDasharray={dash}
             markerEnd={hasArrow ? "url(#modal-arr)" : undefined}
           />
         )}
         {lineType === "orthogonal" && (
-          <path d="M2 14 L2 8 L78 8 L78 2"
-            fill="none" stroke="currentColor" strokeWidth="1.6" strokeDasharray={dash}
-            markerEnd={hasArrow ? "url(#modal-arr)" : undefined} />
+          <path
+            d="M2 14 L2 8 L78 8 L78 2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeDasharray={dash}
+            markerEnd={hasArrow ? "url(#modal-arr)" : undefined}
+          />
         )}
         {lineType === "bezier" && (
-          <path d="M2 14 C 20 14, 60 2, 78 2"
-            fill="none" stroke="currentColor" strokeWidth="1.6" strokeDasharray={dash}
-            markerEnd={hasArrow ? "url(#modal-arr)" : undefined} />
+          <path
+            d="M2 14 C 20 14, 60 2, 78 2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeDasharray={dash}
+            markerEnd={hasArrow ? "url(#modal-arr)" : undefined}
+          />
         )}
       </svg>
       <span className="h-6 w-10 rounded-md border border-border bg-card" />

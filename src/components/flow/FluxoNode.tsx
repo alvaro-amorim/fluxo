@@ -86,7 +86,9 @@ function FluxoNodeComponent({ id, data, selected }: NodeProps) {
           }}
         >
           <div className="text-[13px] font-medium leading-snug line-clamp-3">{d.title}</div>
-          {d.summary ? <div className="mt-0.5 text-[10px] opacity-60 line-clamp-1">{d.summary}</div> : null}
+          {d.summary ? (
+            <div className="mt-0.5 text-[10px] opacity-60 line-clamp-1">{d.summary}</div>
+          ) : null}
         </div>
 
         {d.hiddenInfo ? (

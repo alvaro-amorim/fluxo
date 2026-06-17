@@ -19,7 +19,10 @@ export async function exportFlowPng({ root, fileName, backgroundColor }: ExportF
     pixelRatio: 2,
     filter: (node) => {
       if (!(node instanceof HTMLElement)) return true;
-      return !node.classList.contains("react-flow__minimap") && !node.classList.contains("react-flow__controls");
+      return (
+        !node.classList.contains("react-flow__minimap") &&
+        !node.classList.contains("react-flow__controls")
+      );
     },
   });
 

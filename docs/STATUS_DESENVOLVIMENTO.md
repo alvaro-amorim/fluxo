@@ -176,9 +176,9 @@ src/lib/flow/validation.ts
 Funções disponíveis:
 
 ```ts
-validateFlowFile(input)
-assertValidFlowFile(input)
-isFlowFile(input)
+validateFlowFile(input);
+assertValidFlowFile(input);
+isFlowFile(input);
 ```
 
 ---
@@ -194,12 +194,12 @@ src/lib/flow/serialization.ts
 Funções disponíveis:
 
 ```ts
-projectToFlowFile(project)
-flowFileToProject(file)
-parseFlowFileJson(jsonText)
-stringifyFlowFile(file)
-slugifyFlowName(name)
-getFlowFileName(name)
+projectToFlowFile(project);
+flowFileToProject(file);
+parseFlowFileJson(jsonText);
+stringifyFlowFile(file);
+slugifyFlowName(name);
+getFlowFileName(name);
 ```
 
 ---
@@ -227,12 +227,12 @@ src/lib/flow/adapters.ts
 Funções disponíveis:
 
 ```ts
-fluxoNodeToReactFlowNode(node)
-fluxoEdgeToReactFlowEdge(edge)
-flowProjectToReactFlow(project)
-reactFlowNodeToFluxoNode(node)
-reactFlowEdgeToFluxoEdge(edge)
-reactFlowToFlowProject(base, nodes, edges)
+fluxoNodeToReactFlowNode(node);
+fluxoEdgeToReactFlowEdge(edge);
+flowProjectToReactFlow(project);
+reactFlowNodeToFluxoNode(node);
+reactFlowEdgeToFluxoEdge(edge);
+reactFlowToFlowProject(base, nodes, edges);
 ```
 
 Esses adapters começaram a ser usados diretamente no editor.
@@ -302,13 +302,13 @@ O editor deixou de concentrar toda a conversão React Flow ↔ projeto dentro do
 Agora usa:
 
 ```ts
-flowProjectToReactFlow(project)
-reactFlowToFlowProject(base, nodes, edges)
-projectToFlowFile(project)
-parseFlowFileJson(jsonText)
-flowFileToProject(file)
-stringifyFlowFile(file)
-getFlowFileName(name)
+flowProjectToReactFlow(project);
+reactFlowToFlowProject(base, nodes, edges);
+projectToFlowFile(project);
+parseFlowFileJson(jsonText);
+flowFileToProject(file);
+stringifyFlowFile(file);
+getFlowFileName(name);
 ```
 
 ---

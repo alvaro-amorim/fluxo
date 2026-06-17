@@ -1,14 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-  Plus,
-  Upload,
-  Sparkles,
-  Search,
-  Copy,
-  ArrowUpRight,
-  Trash2,
-} from "lucide-react";
+import { Plus, Upload, Sparkles, Search, Copy, ArrowUpRight, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Toaster } from "@/components/ui/sonner";
@@ -55,8 +47,7 @@ function HomePage() {
   }, []);
 
   const filtered = useMemo(
-    () =>
-      library.filter((p) => p.name.toLowerCase().includes(query.toLowerCase())),
+    () => library.filter((p) => p.name.toLowerCase().includes(query.toLowerCase())),
     [library, query],
   );
 
@@ -166,8 +157,7 @@ function HomePage() {
               <span className="text-muted-foreground">com clareza.</span>
             </h1>
             <p className="mt-6 max-w-lg text-[15px] leading-relaxed text-muted-foreground">
-              Uma tela infinita, blocos simples e o necessário para pensar visualmente.
-              Exporte como{" "}
+              Uma tela infinita, blocos simples e o necessário para pensar visualmente. Exporte como{" "}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[12px] text-foreground">
                 .flow.json
               </code>{" "}
@@ -211,20 +201,91 @@ function HomePage() {
                     <path d="M0,0 L6,3 L0,6 z" fill="currentColor" className="text-foreground/70" />
                   </marker>
                 </defs>
-                <g className="text-foreground/70" stroke="currentColor" strokeWidth="1.4" fill="none">
+                <g
+                  className="text-foreground/70"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  fill="none"
+                >
                   <path d="M70,50 L140,50" markerEnd="url(#arr)" />
                   <path d="M170,68 L170,108" markerEnd="url(#arr)" />
                   <path d="M155,140 L80,140 L80,72" markerEnd="url(#arr)" />
                   <path d="M195,140 L240,140 L240,52" markerEnd="url(#arr)" />
                 </g>
-                <rect x="20" y="32" width="50" height="36" rx="8" fill="var(--card)" stroke="var(--foreground)" strokeWidth="1.4" />
-                <text x="45" y="55" textAnchor="middle" fontSize="10" fill="var(--foreground)" fontFamily="Inter">início</text>
-                <polygon points="170,108 200,140 170,172 140,140" fill="var(--brand-soft)" stroke="var(--brand)" strokeWidth="1.4" />
-                <text x="170" y="144" textAnchor="middle" fontSize="9" fill="var(--foreground)" fontFamily="Inter">decisão?</text>
-                <rect x="140" y="32" width="60" height="36" rx="18" fill="var(--card)" stroke="var(--foreground)" strokeWidth="1.4" />
-                <text x="170" y="55" textAnchor="middle" fontSize="10" fill="var(--foreground)" fontFamily="Inter">processo</text>
-                <circle cx="240" cy="40" r="16" fill="var(--card)" stroke="var(--foreground)" strokeWidth="1.4" />
-                <text x="240" y="44" textAnchor="middle" fontSize="9" fill="var(--foreground)" fontFamily="Inter">fim</text>
+                <rect
+                  x="20"
+                  y="32"
+                  width="50"
+                  height="36"
+                  rx="8"
+                  fill="var(--card)"
+                  stroke="var(--foreground)"
+                  strokeWidth="1.4"
+                />
+                <text
+                  x="45"
+                  y="55"
+                  textAnchor="middle"
+                  fontSize="10"
+                  fill="var(--foreground)"
+                  fontFamily="Inter"
+                >
+                  início
+                </text>
+                <polygon
+                  points="170,108 200,140 170,172 140,140"
+                  fill="var(--brand-soft)"
+                  stroke="var(--brand)"
+                  strokeWidth="1.4"
+                />
+                <text
+                  x="170"
+                  y="144"
+                  textAnchor="middle"
+                  fontSize="9"
+                  fill="var(--foreground)"
+                  fontFamily="Inter"
+                >
+                  decisão?
+                </text>
+                <rect
+                  x="140"
+                  y="32"
+                  width="60"
+                  height="36"
+                  rx="18"
+                  fill="var(--card)"
+                  stroke="var(--foreground)"
+                  strokeWidth="1.4"
+                />
+                <text
+                  x="170"
+                  y="55"
+                  textAnchor="middle"
+                  fontSize="10"
+                  fill="var(--foreground)"
+                  fontFamily="Inter"
+                >
+                  processo
+                </text>
+                <circle
+                  cx="240"
+                  cy="40"
+                  r="16"
+                  fill="var(--card)"
+                  stroke="var(--foreground)"
+                  strokeWidth="1.4"
+                />
+                <text
+                  x="240"
+                  y="44"
+                  textAnchor="middle"
+                  fontSize="9"
+                  fill="var(--foreground)"
+                  fontFamily="Inter"
+                >
+                  fim
+                </text>
               </svg>
               <div className="relative mt-3 flex items-center justify-between border-t border-border pt-3 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                 <span>canvas.flow</span>
@@ -352,7 +413,13 @@ function FlowCard({
             <ArrowUpRight className="h-3.5 w-3.5" />
           </Button>
           <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-            <Button size="sm" variant="ghost" onClick={onDuplicate} title="Duplicar" className="h-8 w-8 rounded-full p-0">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onDuplicate}
+              title="Duplicar"
+              className="h-8 w-8 rounded-full p-0"
+            >
               <Copy className="h-3.5 w-3.5" />
             </Button>
             <Button
@@ -391,7 +458,11 @@ function Thumbnail({ project }: { project: FlowProject }) {
   const w = Math.max(maxX - minX, 1);
   const h = Math.max(maxY - minY, 1);
   return (
-    <svg viewBox={`${minX} ${minY} ${w} ${h}`} className="h-full w-full p-3" preserveAspectRatio="xMidYMid meet">
+    <svg
+      viewBox={`${minX} ${minY} ${w} ${h}`}
+      className="h-full w-full p-3"
+      preserveAspectRatio="xMidYMid meet"
+    >
       {project.edges.map((e) => {
         const a = project.nodes.find((n) => n.id === e.source);
         const b = project.nodes.find((n) => n.id === e.target);

@@ -49,7 +49,9 @@ function asBoolean(value: unknown, fallback: boolean) {
 }
 
 function asStringArray(value: unknown) {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
 }
 
 function normalizeViewport(input: unknown): FlowViewport {
@@ -63,14 +65,19 @@ function normalizeViewport(input: unknown): FlowViewport {
 
 function normalizeSettings(input: unknown): FlowProjectSettings {
   const settings = isObject(input) ? input : {};
-  const layoutDirection = asString(settings.layoutDirection, DEFAULT_PROJECT_SETTINGS.layoutDirection);
+  const layoutDirection = asString(
+    settings.layoutDirection,
+    DEFAULT_PROJECT_SETTINGS.layoutDirection,
+  );
   return {
     theme: asString(settings.theme, DEFAULT_PROJECT_SETTINGS.theme) === "dark" ? "dark" : "light",
     gridVisible: asBoolean(settings.gridVisible, DEFAULT_PROJECT_SETTINGS.gridVisible),
     snapToGrid: asBoolean(settings.snapToGrid, DEFAULT_PROJECT_SETTINGS.snapToGrid),
     gridSize: Math.max(5, asNumber(settings.gridSize, DEFAULT_PROJECT_SETTINGS.gridSize)),
     layoutDirection:
-      layoutDirection === "horizontal" || layoutDirection === "radial" || layoutDirection === "compact"
+      layoutDirection === "horizontal" ||
+      layoutDirection === "radial" ||
+      layoutDirection === "compact"
         ? layoutDirection
         : "vertical",
   };
@@ -115,7 +122,8 @@ function normalizeEdgeSemantic(input: unknown) {
   const priority = asString(semantic.priority, DEFAULT_EDGE_SEMANTIC.priority);
   return {
     condition: asString(semantic.condition, DEFAULT_EDGE_SEMANTIC.condition),
-    priority: priority === "low" || priority === "high" || priority === "critical" ? priority : "normal",
+    priority:
+      priority === "low" || priority === "high" || priority === "critical" ? priority : "normal",
     rules: asStringArray(semantic.rules),
     notes: asString(semantic.notes, DEFAULT_EDGE_SEMANTIC.notes),
   };
@@ -149,7 +157,11 @@ function normalizeStroke(input: unknown): EdgeStrokeType {
   return asString(input, "solid") === "dashed" ? "dashed" : "solid";
 }
 
-function normalizeNode(input: unknown, index: number, warnings: string[]): FluxoNodeSerialized | null {
+function normalizeNode(
+  input: unknown,
+  index: number,
+  warnings: string[],
+): FluxoNodeSerialized | null {
   if (!isObject(input)) {
     warnings.push(`Node na posição ${index} foi ignorado porque não é um objeto.`);
     return null;
@@ -179,7 +191,12 @@ function normalizeNode(input: unknown, index: number, warnings: string[]): Fluxo
   };
 }
 
-function normalizeEdge(input: unknown, index: number, nodeIds: Set<string>, warnings: string[]): FluxoEdgeSerialized | null {
+function normalizeEdge(
+  input: unknown,
+  index: number,
+  nodeIds: Set<string>,
+  warnings: string[],
+): FluxoEdgeSerialized | null {
   if (!isObject(input)) {
     warnings.push(`Conexão na posição ${index} foi ignorada porque não é um objeto.`);
     return null;
@@ -188,7 +205,9 @@ function normalizeEdge(input: unknown, index: number, nodeIds: Set<string>, warn
   const source = asString(input.source, "");
   const target = asString(input.target, "");
   if (!source || !target || !nodeIds.has(source) || !nodeIds.has(target)) {
-    warnings.push(`Conexão ${asString(input.id, String(index))} foi ignorada porque aponta para bloco inexistente.`);
+    warnings.push(
+      `Conexão ${asString(input.id, String(index))} foi ignorada porque aponta para bloco inexistente.`,
+    );
     return null;
   }
 
@@ -215,7 +234,9 @@ function normalizeEdge(input: unknown, index: number, nodeIds: Set<string>, warn
     routing: {
       mode: routing.mode === "manual" ? "manual" : "auto",
       points: Array.isArray(routing.points)
-        ? routing.points.filter(isObject).map((point) => ({ x: asNumber(point.x, 0), y: asNumber(point.y, 0) }))
+        ? routing.points
+            .filter(isObject)
+            .map((point) => ({ x: asNumber(point.x, 0), y: asNumber(point.y, 0) }))
         : [],
       avoidCrossings: asBoolean(routing.avoidCrossings, DEFAULT_EDGE_ROUTING.avoidCrossings),
     },
@@ -226,7 +247,9 @@ function normalizeEdge(input: unknown, index: number, nodeIds: Set<string>, warn
 
 function normalizeHandle(input: unknown): FlowHandlePosition {
   const handle = asString(input, "auto");
-  return handle === "top" || handle === "right" || handle === "bottom" || handle === "left" ? handle : "auto";
+  return handle === "top" || handle === "right" || handle === "bottom" || handle === "left"
+    ? handle
+    : "auto";
 }
 
 function dedupeNodes(nodes: FluxoNodeSerialized[], warnings: string[]) {
@@ -264,11 +287,15 @@ export function normalizeFlowFile(input: unknown): FlowValidationResult {
   const rawNodes = Array.isArray(input.nodes) ? input.nodes : [];
   const rawEdges = Array.isArray(input.edges) ? input.edges : [];
 
-  if (!Array.isArray(input.nodes)) warnings.push("Campo 'nodes' ausente ou inválido. Usando lista vazia.");
-  if (!Array.isArray(input.edges)) warnings.push("Campo 'edges' ausente ou inválido. Usando lista vazia.");
+  if (!Array.isArray(input.nodes))
+    warnings.push("Campo 'nodes' ausente ou inválido. Usando lista vazia.");
+  if (!Array.isArray(input.edges))
+    warnings.push("Campo 'edges' ausente ou inválido. Usando lista vazia.");
 
   const nodes = dedupeNodes(
-    rawNodes.map((node, index) => normalizeNode(node, index, warnings)).filter(Boolean) as FluxoNodeSerialized[],
+    rawNodes
+      .map((node, index) => normalizeNode(node, index, warnings))
+      .filter(Boolean) as FluxoNodeSerialized[],
     warnings,
   );
   const nodeIds = new Set(nodes.map((node) => node.id));
@@ -290,7 +317,10 @@ export function normalizeFlowFile(input: unknown): FlowValidationResult {
       settings: normalizeSettings(rawProject.settings),
       metadata: isObject(rawProject.metadata)
         ? {
-            author: typeof rawProject.metadata.author === "string" ? rawProject.metadata.author : undefined,
+            author:
+              typeof rawProject.metadata.author === "string"
+                ? rawProject.metadata.author
+                : undefined,
             tags: asStringArray(rawProject.metadata.tags),
             source:
               rawProject.metadata.source === "manual" ||
@@ -299,7 +329,9 @@ export function normalizeFlowFile(input: unknown): FlowValidationResult {
                 ? rawProject.metadata.source
                 : "imported",
             originalFileName:
-              typeof rawProject.metadata.originalFileName === "string" ? rawProject.metadata.originalFileName : undefined,
+              typeof rawProject.metadata.originalFileName === "string"
+                ? rawProject.metadata.originalFileName
+                : undefined,
           }
         : { source: "imported", tags: [] },
     },

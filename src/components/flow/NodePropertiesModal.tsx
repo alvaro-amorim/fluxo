@@ -1,10 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -191,7 +186,12 @@ export function NodePropertiesModal({
                       >
                         <span
                           className="block h-full w-full"
-                          style={{ color: p.text, fontSize: 10, lineHeight: "28px", textAlign: "center" }}
+                          style={{
+                            color: p.text,
+                            fontSize: 10,
+                            lineHeight: "28px",
+                            textAlign: "center",
+                          }}
                         >
                           Aa
                         </span>
@@ -276,7 +276,12 @@ export function NodePropertiesModal({
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-border bg-muted/30 px-6 py-4">
-          <Button variant="ghost" size="sm" onClick={onDelete} className="gap-2 text-destructive hover:text-destructive">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onDelete}
+            className="gap-2 text-destructive hover:text-destructive"
+          >
             <Trash2 className="h-4 w-4" /> Excluir
           </Button>
           <div className="flex gap-2">
@@ -306,7 +311,9 @@ function Field({
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5">
         {icon}
-        <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</Label>
+        <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </Label>
       </div>
       {children}
       {hint ? <p className="text-[11px] text-muted-foreground">{hint}</p> : null}
@@ -314,18 +321,45 @@ function Field({
   );
 }
 
-function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <Field label={label}>
       <div className="flex gap-2">
-        <Input type="color" value={value} onChange={(e) => onChange(e.target.value)} className="h-10 w-14 p-1" />
-        <Input value={value} onChange={(e) => onChange(e.target.value)} className="font-mono text-xs" />
+        <Input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-10 w-14 p-1"
+        />
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="font-mono text-xs"
+        />
       </div>
     </Field>
   );
 }
 
-function NumberStepper({ value, onChange, min, step }: { value: number; onChange: (v: number) => void; min: number; step: number }) {
+function NumberStepper({
+  value,
+  onChange,
+  min,
+  step,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  min: number;
+  step: number;
+}) {
   return (
     <Input
       type="number"
@@ -359,7 +393,10 @@ function ChipsField({
     <Field label={label}>
       <div className="flex flex-wrap gap-1.5 rounded-lg border border-input bg-background p-2">
         {values.map((v, idx) => (
-          <span key={`${v}-${idx}`} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs">
+          <span
+            key={`${v}-${idx}`}
+            className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs"
+          >
             {v}
             <button onClick={() => onChange(values.filter((_, i) => i !== idx))}>
               <X className="h-3 w-3" />
@@ -399,7 +436,9 @@ function NodePreview({ draft }: { draft: FluxoNodeData }) {
             : undefined,
       }}
     >
-      <span style={{ transform: draft.shape === "diamond" ? "rotate(-45deg)" : undefined }}>Aa</span>
+      <span style={{ transform: draft.shape === "diamond" ? "rotate(-45deg)" : undefined }}>
+        Aa
+      </span>
     </div>
   );
 }
@@ -410,7 +449,13 @@ function ShapeGlyph({ shape }: { shape: ShapeType }) {
   if (shape === "rounded-rectangle") return <span className={`${base} rounded-lg`} />;
   if (shape === "diamond") return <span className={`${base} rotate-45 rounded-sm`} />;
   if (shape === "hexagon")
-    return <span className={base} style={{ clipPath: "polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)" }} />;
-  if (shape === "cylinder") return <span className={base} style={{ borderRadius: "999px / 12px" }} />;
+    return (
+      <span
+        className={base}
+        style={{ clipPath: "polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)" }}
+      />
+    );
+  if (shape === "cylinder")
+    return <span className={base} style={{ borderRadius: "999px / 12px" }} />;
   return <span className={`${base} rounded-sm`} />;
 }

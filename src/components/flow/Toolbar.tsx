@@ -22,14 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type Tool =
-  | "select"
-  | "block"
-  | "shape"
-  | "line"
-  | "arrow"
-  | "connect"
-  | "text";
+export type Tool = "select" | "block" | "shape" | "line" | "arrow" | "connect" | "text";
 
 export interface ToolbarProps {
   mode: "side" | "floating";
@@ -155,16 +148,53 @@ export function Toolbar(props: ToolbarProps) {
       </Section>
 
       <Section title="Visualização">
-        <ToolRow icon={Grid3x3} label="Grid" shortcut="G" active={props.gridOn} onClick={props.onToggleGrid} />
-        <ToolRow icon={Magnet} label="Snap" shortcut="S" active={props.snapOn} onClick={props.onToggleSnap} />
-        <ToolRow icon={Maximize2} label="Ajustar à tela" shortcut="Ctrl+0" onClick={props.onFitView} />
-        <ToolRow icon={Presentation} label="Apresentação" shortcut="F11" onClick={props.onPresentation} />
+        <ToolRow
+          icon={Grid3x3}
+          label="Grid"
+          shortcut="G"
+          active={props.gridOn}
+          onClick={props.onToggleGrid}
+        />
+        <ToolRow
+          icon={Magnet}
+          label="Snap"
+          shortcut="S"
+          active={props.snapOn}
+          onClick={props.onToggleSnap}
+        />
+        <ToolRow
+          icon={Maximize2}
+          label="Ajustar à tela"
+          shortcut="Ctrl+0"
+          onClick={props.onFitView}
+        />
+        <ToolRow
+          icon={Presentation}
+          label="Apresentação"
+          shortcut="F11"
+          onClick={props.onPresentation}
+        />
       </Section>
 
       <Section title="Arquivo">
-        <ToolRow icon={Download} label="Exportar .flow" shortcut="Ctrl+E" onClick={props.onExportJson} />
-        <ToolRow icon={ImageIcon} label="Exportar PNG" shortcut="Ctrl+P" onClick={props.onExportPng} />
-        <ToolRow icon={Upload} label="Importar .flow" shortcut="Ctrl+O" onClick={props.onImportJson} />
+        <ToolRow
+          icon={Download}
+          label="Exportar .flow"
+          shortcut="Ctrl+E"
+          onClick={props.onExportJson}
+        />
+        <ToolRow
+          icon={ImageIcon}
+          label="Exportar PNG"
+          shortcut="Ctrl+P"
+          onClick={props.onExportPng}
+        />
+        <ToolRow
+          icon={Upload}
+          label="Importar .flow"
+          shortcut="Ctrl+O"
+          onClick={props.onImportJson}
+        />
       </Section>
     </div>
   );
@@ -209,7 +239,9 @@ function ToolRow({
       <kbd
         className={cn(
           "rounded border px-1 text-[10px] font-medium",
-          active ? "border-background/30 text-background/80" : "border-border text-muted-foreground",
+          active
+            ? "border-background/30 text-background/80"
+            : "border-border text-muted-foreground",
         )}
       >
         {shortcut}

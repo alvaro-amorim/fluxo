@@ -1,8 +1,4 @@
-import {
-  MarkerType,
-  type Edge,
-  type Node,
-} from "@xyflow/react";
+import { MarkerType, type Edge, type Node } from "@xyflow/react";
 import {
   DEFAULT_EDGE_SEMANTIC,
   type EdgeLineType,
@@ -65,12 +61,17 @@ export function fluxoEdgeToReactFlowEdge(edge: FluxoEdgeSerialized): Edge {
     label: edge.label,
     type: reactFlowEdgeType(edge.type),
     markerEnd: hasArrow
-      ? { type: MarkerType.ArrowClosed, color: edge.style?.stroke ?? "#64748b", width: 18, height: 18 }
+      ? {
+          type: MarkerType.ArrowClosed,
+          color: edge.style?.stroke ?? "#64748b",
+          width: 18,
+          height: 18,
+        }
       : undefined,
     style: {
       stroke: edge.style?.stroke,
       strokeWidth: edge.style?.strokeWidth,
-      strokeDasharray: stroke === "dashed" ? "5 4" : edge.style?.strokeDasharray ?? undefined,
+      strokeDasharray: stroke === "dashed" ? "5 4" : (edge.style?.strokeDasharray ?? undefined),
     },
     data,
   };
@@ -131,7 +132,11 @@ export function reactFlowEdgeToFluxoEdge(edge: Edge): FluxoEdgeSerialized {
   };
 }
 
-export function reactFlowToFlowProject(base: FlowProject, nodes: Node[], edges: Edge[]): FlowProject {
+export function reactFlowToFlowProject(
+  base: FlowProject,
+  nodes: Node[],
+  edges: Edge[],
+): FlowProject {
   return {
     ...base,
     nodes: nodes.map(reactFlowNodeToFluxoNode),
@@ -147,5 +152,7 @@ function reactFlowEdgeType(type: EdgeLineType) {
 }
 
 function normalizeHandle(value: unknown): FlowHandlePosition {
-  return value === "top" || value === "right" || value === "bottom" || value === "left" ? value : "auto";
+  return value === "top" || value === "right" || value === "bottom" || value === "left"
+    ? value
+    : "auto";
 }

@@ -102,13 +102,13 @@ Estrutura principal:
 
 ### 4.1 Campos da raiz
 
-| Campo | Tipo | Obrigatório | Descrição |
-|---|---:|---:|---|
-| `app` | string | Sim | Deve ser `"Fluxo"` |
-| `schemaVersion` | string | Sim | Versão do schema |
-| `project` | object | Sim | Metadados e configurações do projeto |
-| `nodes` | array | Sim | Lista de blocos/formas do fluxograma |
-| `edges` | array | Sim | Lista de linhas/setas/conexões |
+| Campo           |   Tipo | Obrigatório | Descrição                            |
+| --------------- | -----: | ----------: | ------------------------------------ |
+| `app`           | string |         Sim | Deve ser `"Fluxo"`                   |
+| `schemaVersion` | string |         Sim | Versão do schema                     |
+| `project`       | object |         Sim | Metadados e configurações do projeto |
+| `nodes`         |  array |         Sim | Lista de blocos/formas do fluxograma |
+| `edges`         |  array |         Sim | Lista de linhas/setas/conexões       |
 
 ---
 
@@ -471,23 +471,13 @@ export type FlowEdgeData = {
 ### 7.14 FlowHandlePosition
 
 ```ts
-export type FlowHandlePosition =
-  | "top"
-  | "right"
-  | "bottom"
-  | "left"
-  | "auto";
+export type FlowHandlePosition = "top" | "right" | "bottom" | "left" | "auto";
 ```
 
 ### 7.15 FlowEdgeType
 
 ```ts
-export type FlowEdgeType =
-  | "orthogonal"
-  | "straight"
-  | "smooth"
-  | "dashed"
-  | "no-arrow";
+export type FlowEdgeType = "orthogonal" | "straight" | "smooth" | "dashed" | "no-arrow";
 ```
 
 ### 7.16 FlowEdgeStyle
@@ -538,61 +528,61 @@ export type FlowCustomField = {
 
 ## 8.1 Raiz
 
-| Campo | Obrigatório | Default se ausente |
-|---|---:|---|
-| `app` | Sim | Rejeitar ou perguntar se deseja tentar importar |
-| `schemaVersion` | Sim | Tentar interpretar como versão legada apenas se seguro |
-| `project` | Sim | Criar projeto padrão apenas em importação assistida |
-| `nodes` | Sim | `[]` |
-| `edges` | Sim | `[]` |
+| Campo           | Obrigatório | Default se ausente                                     |
+| --------------- | ----------: | ------------------------------------------------------ |
+| `app`           |         Sim | Rejeitar ou perguntar se deseja tentar importar        |
+| `schemaVersion` |         Sim | Tentar interpretar como versão legada apenas se seguro |
+| `project`       |         Sim | Criar projeto padrão apenas em importação assistida    |
+| `nodes`         |         Sim | `[]`                                                   |
+| `edges`         |         Sim | `[]`                                                   |
 
 ## 8.2 Project
 
-| Campo | Obrigatório | Default |
-|---|---:|---|
-| `id` | Sim | Gerar UUID |
-| `name` | Sim | `"Fluxo sem título"` |
-| `description` | Não | `""` |
-| `createdAt` | Sim | Data atual |
-| `updatedAt` | Sim | Data atual |
-| `background` | Sim | `"#f8fafc"` |
-| `viewport` | Sim | `{ x: 0, y: 0, zoom: 1 }` |
-| `settings` | Sim | Configurações padrão |
-| `metadata` | Não | `{ source: "imported" }` |
+| Campo         | Obrigatório | Default                   |
+| ------------- | ----------: | ------------------------- |
+| `id`          |         Sim | Gerar UUID                |
+| `name`        |         Sim | `"Fluxo sem título"`      |
+| `description` |         Não | `""`                      |
+| `createdAt`   |         Sim | Data atual                |
+| `updatedAt`   |         Sim | Data atual                |
+| `background`  |         Sim | `"#f8fafc"`               |
+| `viewport`    |         Sim | `{ x: 0, y: 0, zoom: 1 }` |
+| `settings`    |         Sim | Configurações padrão      |
+| `metadata`    |         Não | `{ source: "imported" }`  |
 
 ## 8.3 Node
 
-| Campo | Obrigatório | Default |
-|---|---:|---|
-| `id` | Sim | Gerar id se estiver em modo reparo |
-| `type` | Sim | `"flowNode"` |
-| `shape` | Sim | `"rounded-rectangle"` |
-| `title` | Sim | `"Bloco sem título"` |
-| `summary` | Não | `""` |
-| `hiddenInfo` | Não | `""` |
-| `position` | Sim | Posição automática |
-| `size` | Sim | `{ width: 180, height: 80 }` |
-| `style` | Sim | Estilo padrão |
-| `icon` | Não | `{ type: "none" }` |
-| `semantic` | Não | Objeto vazio normalizado |
-| `customFields` | Não | `[]` |
+| Campo          | Obrigatório | Default                            |
+| -------------- | ----------: | ---------------------------------- |
+| `id`           |         Sim | Gerar id se estiver em modo reparo |
+| `type`         |         Sim | `"flowNode"`                       |
+| `shape`        |         Sim | `"rounded-rectangle"`              |
+| `title`        |         Sim | `"Bloco sem título"`               |
+| `summary`      |         Não | `""`                               |
+| `hiddenInfo`   |         Não | `""`                               |
+| `position`     |         Sim | Posição automática                 |
+| `size`         |         Sim | `{ width: 180, height: 80 }`       |
+| `style`        |         Sim | Estilo padrão                      |
+| `icon`         |         Não | `{ type: "none" }`                 |
+| `semantic`     |         Não | Objeto vazio normalizado           |
+| `customFields` |         Não | `[]`                               |
 
 ## 8.4 Edge
 
-| Campo | Obrigatório | Default |
-|---|---:|---|
-| `id` | Sim | Gerar id se estiver em modo reparo |
-| `source` | Sim | Sem default |
-| `target` | Sim | Sem default |
-| `sourceHandle` | Não | `"auto"` |
-| `targetHandle` | Não | `"auto"` |
-| `label` | Não | `""` |
-| `hiddenInfo` | Não | `""` |
-| `type` | Sim | `"orthogonal"` |
-| `style` | Sim | Estilo padrão |
-| `routing` | Não | `{ mode: "auto", points: [], avoidCrossings: true }` |
-| `semantic` | Não | Objeto vazio normalizado |
-| `customFields` | Não | `[]` |
+| Campo          | Obrigatório | Default                                              |
+| -------------- | ----------: | ---------------------------------------------------- |
+| `id`           |         Sim | Gerar id se estiver em modo reparo                   |
+| `source`       |         Sim | Sem default                                          |
+| `target`       |         Sim | Sem default                                          |
+| `sourceHandle` |         Não | `"auto"`                                             |
+| `targetHandle` |         Não | `"auto"`                                             |
+| `label`        |         Não | `""`                                                 |
+| `hiddenInfo`   |         Não | `""`                                                 |
+| `type`         |         Sim | `"orthogonal"`                                       |
+| `style`        |         Sim | Estilo padrão                                        |
+| `routing`      |         Não | `{ mode: "auto", points: [], avoidCrossings: true }` |
+| `semantic`     |         Não | Objeto vazio normalizado                             |
+| `customFields` |         Não | `[]`                                                 |
 
 ---
 
@@ -1596,7 +1586,7 @@ Ao exportar:
 Gerar nome limpo:
 
 ```ts
-`${slugify(project.name)}.flow.json`
+`${slugify(project.name)}.flow.json`;
 ```
 
 Exemplo:

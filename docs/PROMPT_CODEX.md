@@ -775,11 +775,11 @@ Mas prepare a arquitetura para:
 Crie abstrações como:
 
 ```ts
-desktopBridge.saveFile()
-desktopBridge.openFile()
-desktopBridge.exportPng()
-desktopBridge.getDisplays()
-desktopBridge.setPresentationMode()
+desktopBridge.saveFile();
+desktopBridge.openFile();
+desktopBridge.exportPng();
+desktopBridge.getDisplays();
+desktopBridge.setPresentationMode();
 ```
 
 No web/local, essas funções podem usar fallbacks.

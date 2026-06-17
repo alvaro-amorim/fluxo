@@ -1,4 +1,10 @@
-import type { FlowFile, FlowProject, FluxoEdgeSerialized, FluxoNodeSerialized, ShapeType } from "./types";
+import type {
+  FlowFile,
+  FlowProject,
+  FluxoEdgeSerialized,
+  FluxoNodeSerialized,
+  ShapeType,
+} from "./types";
 import { CURRENT_SCHEMA_VERSION } from "./types";
 import { DEFAULT_PROJECT_SETTINGS, DEFAULT_VIEWPORT } from "./defaults";
 

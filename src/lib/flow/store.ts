@@ -14,7 +14,9 @@ const CURRENT_KEY = "fluxo.current.v1";
 function normalizeLibraryCandidate(candidate: unknown): FlowProject[] | null {
   if (!Array.isArray(candidate)) return null;
   return candidate.filter((item): item is FlowProject => {
-    return Boolean(item) && typeof item === "object" && typeof (item as FlowProject).id === "string";
+    return (
+      Boolean(item) && typeof item === "object" && typeof (item as FlowProject).id === "string"
+    );
   });
 }
 

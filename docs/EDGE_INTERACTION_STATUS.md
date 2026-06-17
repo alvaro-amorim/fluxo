@@ -198,6 +198,24 @@ Ela também foi preparada para receber ações opcionais:
 
 Esses botões só aparecem quando o `FlowEditor` passar os callbacks correspondentes, evitando quebrar a integração atual.
 
+### 3. Correção de direção e inversão rápida
+
+Arquivos:
+
+```txt
+src/components/flow/FluxoNode.tsx
+src/components/flow/FluxoEdge.tsx
+```
+
+A etapa atual corrige dois pontos práticos percebidos no uso:
+
+- reduziu a chance de iniciar uma conexão pelo handle invisível de entrada, que podia gerar seta invertida ao arrastar de A para B;
+- adicionou um botão rápido `Inverter` diretamente na seta selecionada.
+
+Com isso, ao selecionar uma seta, aparece uma ação rápida próxima ao caminho da conexão para trocar `source` e `target` sem abrir modal.
+
+Ao inverter uma seta manual, os pontos de rota também são invertidos para preservar melhor o desenho visual do caminho.
+
 ---
 
 ## Limitações ainda existentes

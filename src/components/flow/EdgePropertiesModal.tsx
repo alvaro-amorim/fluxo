@@ -76,8 +76,6 @@ export function EdgePropertiesModal({
   const useAutoRouting = () => {
     setDraft({
       ...draft,
-      sourceHandle: "auto",
-      targetHandle: "auto",
       routing: {
         ...(draft.routing ?? { points: [], avoidCrossings: true }),
         mode: "auto",
@@ -193,8 +191,8 @@ export function EdgePropertiesModal({
             </div>
 
             <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-              Manual trava os lados escolhidos. Automático recalcula os pontos quando o fluxo é
-              reaberto ou quando a lógica inteligente é aplicada.
+              Manual trava os lados escolhidos. Automático preserva o desenho atual e permite que a
+              lógica inteligente recalcule os pontos nas próximas rotinas de organização.
             </p>
           </div>
 

@@ -50,7 +50,10 @@ export function resolveSerializedEdgeHandles(
   if (!source || !target) return edge;
 
   const smart = getSmartHandles(serializedNodeToRect(source), serializedNodeToRect(target));
-  const shouldAutoRoute = edge.routing?.mode !== "manual" || shouldUseSmartHandle(edge.sourceHandle) || shouldUseSmartHandle(edge.targetHandle);
+  const shouldAutoRoute =
+    edge.routing?.mode !== "manual" ||
+    shouldUseSmartHandle(edge.sourceHandle) ||
+    shouldUseSmartHandle(edge.targetHandle);
 
   if (!shouldAutoRoute) return edge;
 
@@ -109,23 +112,14 @@ export function applySmartHandlesToReactFlowEdges(nodes: Node[], edges: Edge[]):
   return edges.map((edge) => {
     const handles = resolveReactFlowEdgeHandles(edge, nodes);
     const data = (edge.data as FluxoEdgeData | undefined) ?? undefined;
-    const nextData = data
-      ? {
-          ...data,
-          sourceHandle: handles.sourceHandle,
-          targetHandle: handles.targetHandle,
-          routing: {
-            ...(data.routing ?? { points: [], avoidCrossings: true }),
-            mode: data.routing?.mode === "manual" ? "manual" : "auto",
-          },
-        }
-      : edge.data;
+    const nextRoutingMode = data?.routing?.mode === "manual" ? "manual" : "auto";
+    const edgeHandleChanged =
+      edge.sourceHandle !== handles.sourceHandle || edge.targetHandle !== handles.targetHandle;
+    const dataHandleChanged =
+      data?.sourceHandle !== handles.sourceHandle || data?.targetHandle !== handles.targetHandle;
+    const routingModeChanged = Boolean(data) && data?.routing?.mode !== nextRoutingMode;
 
-    if (
-      edge.sourceHandle === handles.sourceHandle &&
-      edge.targetHandle === handles.targetHandle &&
-      nextData === edge.data
-    ) {
+    if (!edgeHandleChanged && !dataHandleChanged && !routingModeChanged) {
       return edge;
     }
 
@@ -133,7 +127,17 @@ export function applySmartHandlesToReactFlowEdges(nodes: Node[], edges: Edge[]):
       ...edge,
       sourceHandle: handles.sourceHandle,
       targetHandle: handles.targetHandle,
-      data: nextData,
+      data: data
+        ? {
+            ...data,
+            sourceHandle: handles.sourceHandle,
+            targetHandle: handles.targetHandle,
+            routing: {
+              ...(data.routing ?? { points: [], avoidCrossings: true }),
+              mode: nextRoutingMode,
+            },
+          }
+        : edge.data,
     };
   });
 }

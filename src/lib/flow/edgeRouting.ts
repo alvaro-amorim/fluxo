@@ -166,7 +166,9 @@ export function getManualRouteControlPoint(
   offset = 96,
 ): Point {
   const points = getManualRouteControlPoints(sourceNode, targetNode, { axis, offset });
-  return points[0] ?? getRectMidpoint(reactFlowNodeToRect(sourceNode), reactFlowNodeToRect(targetNode));
+  return (
+    points[0] ?? getRectMidpoint(reactFlowNodeToRect(sourceNode), reactFlowNodeToRect(targetNode))
+  );
 }
 
 export function getManualRouteControlPoints(
@@ -233,7 +235,11 @@ export function insertManualRoutePoint(
   if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return normalized;
 
   const safeIndex = Math.max(0, Math.min(index, normalized.length));
-  return [...normalized.slice(0, safeIndex), { x: point.x, y: point.y }, ...normalized.slice(safeIndex)];
+  return [
+    ...normalized.slice(0, safeIndex),
+    { x: point.x, y: point.y },
+    ...normalized.slice(safeIndex),
+  ];
 }
 
 export function removeManualRoutePoint(points: unknown, index: number): ManualRoutePoint[] {
@@ -370,7 +376,8 @@ function getHorizontalManualCorridorX(
   if (target.right + minimumGap <= source.left) return (target.right + source.left) / 2;
 
   const direction = target.centerX >= source.centerX ? 1 : -1;
-  const outerEdge = direction > 0 ? Math.max(source.right, target.right) : Math.min(source.left, target.left);
+  const outerEdge =
+    direction > 0 ? Math.max(source.right, target.right) : Math.min(source.left, target.left);
   return outerEdge + offset * direction;
 }
 
@@ -384,7 +391,8 @@ function getVerticalManualCorridorY(
   if (target.bottom + minimumGap <= source.top) return (target.bottom + source.top) / 2;
 
   const direction = target.centerY >= source.centerY ? 1 : -1;
-  const outerEdge = direction > 0 ? Math.max(source.bottom, target.bottom) : Math.min(source.top, target.top);
+  const outerEdge =
+    direction > 0 ? Math.max(source.bottom, target.bottom) : Math.min(source.top, target.top);
   return outerEdge + offset * direction;
 }
 

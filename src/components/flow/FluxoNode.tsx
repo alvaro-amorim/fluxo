@@ -123,28 +123,28 @@ function FluxoNodeComponent({ id, data, selected }: NodeProps) {
 
       {HANDLE_POSITIONS.map((handle) => (
         <Handle
-          key={`source-${handle.id}`}
-          type="source"
-          position={handle.position}
-          id={handle.id}
-          isConnectableStart
-          isConnectableEnd
-          className="!h-3 !w-3 !border !border-slate-400 !bg-white opacity-0 transition group-hover:opacity-90"
-          style={{ zIndex: 2 }}
-          title="Arraste daqui para criar uma seta saindo deste bloco"
-        />
-      ))}
-      {HANDLE_POSITIONS.map((handle) => (
-        <Handle
           key={`target-${handle.id}`}
           type="target"
           position={handle.position}
           id={handle.id}
           isConnectableStart={false}
           isConnectableEnd
-          className="!h-2 !w-2 !border-0 !bg-transparent"
+          className="!h-3 !w-3 !border-0 !bg-transparent"
           style={{ zIndex: 1 }}
           title="Solte aqui para conectar uma seta neste bloco"
+        />
+      ))}
+      {HANDLE_POSITIONS.map((handle) => (
+        <Handle
+          key={`source-${handle.id}`}
+          type="source"
+          position={handle.position}
+          id={handle.id}
+          isConnectableStart
+          isConnectableEnd={false}
+          className="!h-2.5 !w-2.5 !border !border-slate-400 !bg-white opacity-0 transition group-hover:opacity-90"
+          style={{ zIndex: 3 }}
+          title="Arraste daqui para criar uma seta saindo deste bloco"
         />
       ))}
     </div>

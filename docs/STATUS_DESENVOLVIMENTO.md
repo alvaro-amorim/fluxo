@@ -419,3 +419,26 @@ lint: 0 errors, warnings aceitáveis
 build: sucesso
 app: abre em localhost
 ```
+
+---
+
+## Rodada atual - correcao de direcao de setas
+
+Status implementado:
+
+- conexoes criadas pelo usuario preservam a origem do gesto como `source`;
+- `source`/`target` nao sao trocados por layout, Auto, Desvio X, Desvio Y ou roteamento inteligente;
+- self-loop esta desabilitado nesta etapa;
+- `Inverter` foi movido para o `FlowEditor`, entra no historico e reseta a rota para `auto`;
+- `FluxoEdge` nao executa mais alteracao de estado central;
+- handles publicos permanecem `top`, `right`, `bottom` e `left`;
+- handles `source` e `target` foram separados em prioridade de interacao para reduzir ambiguidade no React Flow;
+- toolbar contextual conecta Editar, Duplicar node, Inverter edge, Auto, Desvio X/Y e Remover.
+
+Validacoes da rodada:
+
+```txt
+npm.cmd run format
+npm.cmd run lint
+npm.cmd run build
+```

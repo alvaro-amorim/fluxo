@@ -109,13 +109,13 @@ src/lib/flow/edgeRouting.ts
 Funções disponíveis:
 
 ```ts
-getManualRouteControlPoint(sourceNode, targetNode, axis, offset)
-getManualRouteControlPoints(sourceNode, targetNode, options)
-normalizeManualRoutePoints(points)
-replaceManualRoutePoint(points, index, nextPoint)
-insertManualRoutePoint(points, index, point)
-removeManualRoutePoint(points, index)
-nudgeManualRoutePoints(points, delta)
+getManualRouteControlPoint(sourceNode, targetNode, axis, offset);
+getManualRouteControlPoints(sourceNode, targetNode, options);
+normalizeManualRoutePoints(points);
+replaceManualRoutePoint(points, index, nextPoint);
+insertManualRoutePoint(points, index, point);
+removeManualRoutePoint(points, index);
+nudgeManualRoutePoints(points, delta);
 ```
 
 Objetivo:
@@ -268,4 +268,38 @@ Resultado esperado:
 lint: 0 errors, 6 warnings conhecidos
 build: sucesso
 app: abre em localhost
+```
+
+---
+
+## Atualizacao desta rodada - direcao das setas
+
+Arquivos principais:
+
+```txt
+src/components/flow/FlowEditor.tsx
+src/components/flow/FluxoNode.tsx
+src/components/flow/FluxoEdge.tsx
+src/components/flow/SelectionToolbar.tsx
+```
+
+Decisoes implementadas:
+
+- conexao iniciada em A e solta em B sempre cria `source=A` e `target=B`;
+- self-loop esta bloqueado por enquanto;
+- roteamento automatico e manual pode alterar apenas handles e points, nunca `source`/`target`;
+- `Inverter` agora fica no `FlowEditor`, troca `source`/`target` por acao explicita do usuario e reseta `routing.mode` para `auto`;
+- `FluxoEdge` voltou a ser apenas renderizacao/interacao visual leve, sem alterar estado central;
+- handles publicos continuam sendo `top`, `right`, `bottom` e `left`;
+- `target` aceita drop, mas nao inicia gesto de conexao;
+- `source` inicia gesto de conexao e tem prioridade visual/de hit testing;
+- `Auto`, `Desvio X` e `Desvio Y` preservam a direcao logica da edge;
+- `Editar`, `Duplicar` de node, `Inverter`, `Auto`, `Desvio X`, `Desvio Y` e `Remover` estao conectados na toolbar contextual.
+
+Validacao esperada desta rodada:
+
+```txt
+npm.cmd run format
+npm.cmd run lint
+npm.cmd run build
 ```

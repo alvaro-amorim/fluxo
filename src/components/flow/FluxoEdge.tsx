@@ -1,16 +1,14 @@
-import { useCallback } from "react";
 import {
   BaseEdge,
   EdgeLabelRenderer,
   getBezierPath,
   getSmoothStepPath,
   getStraightPath,
-  useReactFlow,
   type EdgeProps,
 } from "@xyflow/react";
 
 import { normalizeManualRoutePoints, type ManualRoutePoint } from "@/lib/flow/edgeRouting";
-import type { EdgeLineType, FlowHandlePosition, FluxoEdgeData } from "@/lib/flow/types";
+import type { EdgeLineType, FluxoEdgeData } from "@/lib/flow/types";
 
 type EdgePath = [path: string, labelX: number, labelY: number];
 type Point = ManualRoutePoint;
@@ -28,7 +26,6 @@ export function FluxoEdge(props: EdgeProps) {
     style,
     selected,
   } = props;
-  const { setEdges } = useReactFlow();
   const data = props.data as FluxoEdgeData | undefined;
   const lineType = data?.lineType ?? "orthogonal";
   const manualPoints = normalizeManualRoutePoints(
@@ -49,54 +46,6 @@ export function FluxoEdge(props: EdgeProps) {
   const hiddenInfo = data?.hiddenInfo;
   const stroke = style?.stroke ?? data?.style?.stroke ?? "#64748b";
   const strokeWidth = Number(style?.strokeWidth ?? data?.style?.strokeWidth ?? 2);
-
-  const reverseDirection = useCallback(
-    (event: React.MouseEvent<HTMLButtonElement>) => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      setEdges((currentEdges) =>
-        currentEdges.map((edge) => {
-          if (edge.id !== id) return edge;
-
-          const edgeData = edge.data as FluxoEdgeData | undefined;
-          const nextSourceHandle = normalizeHandleForReverse(
-            edge.targetHandle ?? edgeData?.targetHandle,
-          );
-          const nextTargetHandle = normalizeHandleForReverse(
-            edge.sourceHandle ?? edgeData?.sourceHandle,
-          );
-          const nextRouting = edgeData?.routing
-            ? {
-                ...edgeData.routing,
-                points:
-                  edgeData.routing.mode === "manual"
-                    ? normalizeManualRoutePoints(edgeData.routing.points).reverse()
-                    : (edgeData.routing.points ?? []),
-              }
-            : edgeData?.routing;
-
-          return {
-            ...edge,
-            source: edge.target,
-            target: edge.source,
-            sourceHandle: nextSourceHandle,
-            targetHandle: nextTargetHandle,
-            selected: true,
-            data: edgeData
-              ? {
-                  ...edgeData,
-                  sourceHandle: nextSourceHandle,
-                  targetHandle: nextTargetHandle,
-                  routing: nextRouting,
-                }
-              : edge.data,
-          };
-        }),
-      );
-    },
-    [id, setEdges],
-  );
 
   return (
     <>
@@ -132,7 +81,7 @@ export function FluxoEdge(props: EdgeProps) {
               style={{
                 transform: `translate(-50%, -50%) translate(${point.x}px, ${point.y}px)`,
               }}
-              title={`Ponto manual ${index + 1} — preparado para edição visual futura`}
+              title={`Ponto manual ${index + 1} - preparado para edicao visual futura`}
             >
               {index + 1}
             </div>
@@ -148,26 +97,10 @@ export function FluxoEdge(props: EdgeProps) {
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
               pointerEvents: "all",
             }}
-            title={hiddenInfo || "Duplo clique para editar a conexão"}
+            title={hiddenInfo || "Duplo clique para editar a conexao"}
           >
             {label ? <span>{label}</span> : <span className="text-muted-foreground">Info</span>}
           </div>
-        </EdgeLabelRenderer>
-      ) : null}
-
-      {selected ? (
-        <EdgeLabelRenderer>
-          <button
-            type="button"
-            className="nodrag nopan pointer-events-auto absolute -translate-x-1/2 rounded-full border border-border bg-card px-2 py-1 text-[10px] font-medium text-muted-foreground shadow-sm transition hover:border-foreground/30 hover:text-foreground"
-            style={{
-              transform: `translate(-50%, 0) translate(${labelX}px, ${labelY + 22}px)`,
-            }}
-            title="Inverter direção da seta"
-            onClick={reverseDirection}
-          >
-            Inverter
-          </button>
         </EdgeLabelRenderer>
       ) : null}
     </>
@@ -289,10 +222,4 @@ function getPathLabelPoint(points: Point[]): Point {
   }
 
   return points[Math.floor(points.length / 2)] ?? { x: 0, y: 0 };
-}
-
-function normalizeHandleForReverse(value: unknown): FlowHandlePosition {
-  return value === "top" || value === "right" || value === "bottom" || value === "left"
-    ? value
-    : "auto";
 }

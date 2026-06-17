@@ -16,6 +16,7 @@ import {
   type NodeChange,
   type EdgeChange,
   type EdgeTypes,
+  type OnConnectStartParams,
   type NodeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -32,6 +33,7 @@ import {
   DEFAULT_NODE_STYLE,
   DEFAULT_SEMANTIC,
   type FlowLayoutDirection,
+  type FlowHandlePosition,
   type FlowProject,
   type FluxoEdgeData,
   type FluxoEdgeSerialized,
@@ -52,7 +54,10 @@ import {
 import { exportFlowPng } from "@/lib/export/exportPng";
 import { setCurrentProject, upsertProject } from "@/lib/flow/store";
 import { calculateAutoLayout } from "@/lib/flow/layout";
-import { applySmartHandlesToReactFlowEdges } from "@/lib/flow/edgeRouting";
+import {
+  applySmartHandlesToReactFlowEdges,
+  getManualRouteControlPoints,
+} from "@/lib/flow/edgeRouting";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, HelpCircle, Palette, Presentation, X } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -71,9 +76,20 @@ const nodeTypes: NodeTypes = { fluxo: FluxoNode };
 const edgeTypes: EdgeTypes = { fluxo: FluxoEdge };
 
 type FlowSnapshot = { nodes: Node[]; edges: Edge[] };
+type ConnectionStart = {
+  nodeId: string | null;
+  handleId: FlowHandlePosition;
+  handleType: OnConnectStartParams["handleType"];
+};
 
 interface FlowEditorProps {
   project: FlowProject;
+}
+
+function normalizePublicHandle(value: unknown): FlowHandlePosition {
+  return value === "top" || value === "right" || value === "bottom" || value === "left"
+    ? value
+    : "auto";
 }
 
 export function FlowEditor(props: FlowEditorProps) {
@@ -107,6 +123,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const connectionStartRef = useRef<ConnectionStart | null>(null);
   const { fitView, screenToFlowPosition } = useReactFlow();
 
   const historyRef = useRef<FlowSnapshot[]>([]);
@@ -151,6 +168,8 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
   }, [nodes, edges, background, gridOn, snapOn, persistProject]);
 
   const resolveAutoEdges = useCallback((nextNodes: Node[], nextEdges: Edge[]) => {
+    // Routing may update handles and points, but never source/target.
+    // Inverting direction is the only action that swaps source/target.
     return applySmartHandlesToReactFlowEdges(
       nextNodes,
       nextEdges.map((edge) => {
@@ -188,17 +207,58 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
 
   const createEdge = useCallback((edge: FluxoEdgeSerialized) => fluxoEdgeToReactFlowEdge(edge), []);
 
+  const onConnectStart = useCallback((_: MouseEvent | TouchEvent, params: OnConnectStartParams) => {
+    connectionStartRef.current = {
+      nodeId: params.nodeId,
+      handleId: normalizePublicHandle(params.handleId),
+      handleType: params.handleType,
+    };
+  }, []);
+
+  const clearConnectionStart = useCallback(() => {
+    connectionStartRef.current = null;
+  }, []);
+
   const onConnect = useCallback(
     (conn: Connection) => {
-      if (!conn.source || !conn.target) return;
+      if (!conn.source || !conn.target) {
+        clearConnectionStart();
+        return;
+      }
+
+      const connectionStart = connectionStartRef.current;
+      const startedFromSource = connectionStart?.nodeId && connectionStart.handleType === "source";
+      const source = startedFromSource ? connectionStart.nodeId! : conn.source;
+      const target =
+        startedFromSource && conn.source !== source
+          ? conn.source
+          : startedFromSource
+            ? conn.target
+            : conn.target;
+
+      if (!source || !target || source === target) {
+        clearConnectionStart();
+        return;
+      }
+
+      const sourceHandle = startedFromSource
+        ? connectionStart.handleId === "auto"
+          ? normalizePublicHandle(conn.source === source ? conn.sourceHandle : conn.targetHandle)
+          : connectionStart.handleId
+        : normalizePublicHandle(conn.sourceHandle);
+      const targetHandle =
+        startedFromSource && conn.source !== source
+          ? normalizePublicHandle(conn.sourceHandle)
+          : normalizePublicHandle(conn.targetHandle);
+
       snapshot();
       const id = `edge-${Date.now()}`;
       const serialized: FluxoEdgeSerialized = {
         id,
-        source: conn.source,
-        target: conn.target,
-        sourceHandle: (conn.sourceHandle as FluxoEdgeSerialized["sourceHandle"]) ?? "auto",
-        targetHandle: (conn.targetHandle as FluxoEdgeSerialized["targetHandle"]) ?? "auto",
+        source,
+        target,
+        sourceHandle,
+        targetHandle,
         label: undefined,
         hiddenInfo: "",
         type: "orthogonal",
@@ -209,9 +269,10 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         semantic: { ...DEFAULT_EDGE_SEMANTIC },
         customFields: [],
       };
-      setEdges((eds) => addEdge(createEdge(serialized), eds));
+      setEdges((eds) => resolveAutoEdges(nodes, addEdge(createEdge(serialized), eds)));
+      clearConnectionStart();
     },
-    [createEdge, snapshot],
+    [clearConnectionStart, createEdge, nodes, resolveAutoEdges, snapshot],
   );
 
   const addBlock = useCallback(
@@ -394,11 +455,10 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
 
         const source = nodes.find((node) => node.id === edge.source);
         const target = nodes.find((node) => node.id === edge.target);
-        const midX = ((source?.position.x ?? 0) + (target?.position.x ?? 0)) / 2;
-        const midY = ((source?.position.y ?? 0) + (target?.position.y ?? 0)) / 2;
-        const currentPoint = data.routing?.points?.[0] ?? { x: midX, y: midY };
-        const controlPoint =
-          axis === "x" ? { x: currentPoint.x + 80, y: midY } : { x: midX, y: currentPoint.y + 80 };
+        const points =
+          source && target
+            ? getManualRouteControlPoints(source, target, { axis })
+            : (data.routing?.points ?? []);
 
         return {
           ...edge,
@@ -407,7 +467,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
             routing: {
               ...(data.routing ?? {}),
               mode: "manual",
-              points: [controlPoint],
+              points,
             },
           },
         };
@@ -415,6 +475,45 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     },
     [nodes, updateSelectedEdge],
   );
+
+  const invertSelectedEdge = useCallback(() => {
+    if (!selectedEdge) return;
+
+    snapshot();
+    setEdges((eds) => {
+      const nextEdges = eds.map((edge) => {
+        if (edge.id !== selectedEdge.id) return edge;
+
+        const data = edge.data as FluxoEdgeData | undefined;
+        const sourceHandle = normalizePublicHandle(edge.targetHandle ?? data?.targetHandle);
+        const targetHandle = normalizePublicHandle(edge.sourceHandle ?? data?.sourceHandle);
+
+        return {
+          ...edge,
+          source: edge.target,
+          target: edge.source,
+          sourceHandle,
+          targetHandle,
+          selected: true,
+          data: data
+            ? {
+                ...data,
+                sourceHandle,
+                targetHandle,
+                routing: {
+                  ...(data.routing ?? {}),
+                  mode: "auto",
+                  points: [],
+                },
+              }
+            : data,
+        };
+      });
+      const resolvedEdges = resolveAutoEdges(nodes, nextEdges);
+      setSelectedEdge(resolvedEdges.find((edge) => edge.id === selectedEdge.id) ?? null);
+      return resolvedEdges;
+    });
+  }, [nodes, resolveAutoEdges, selectedEdge, snapshot]);
 
   const exportJson = useCallback(() => {
     try {
@@ -843,6 +942,8 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onConnectStart={onConnectStart}
+          onConnectEnd={clearConnectionStart}
           onPaneClick={onPaneClick}
           onNodeClick={onNodeClick}
           onEdgeClick={onEdgeClick}
@@ -882,7 +983,16 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
       {!presentation ? (
         <SelectionToolbar
           visible={Boolean(selectedNode || selectedEdge)}
-          hasEdgeSelection={Boolean(selectedEdge)}
+          kind={selectedEdge ? "edge" : selectedNode ? "node" : null}
+          onEdit={() => {
+            if (selectedEdge) {
+              setEdgeModalOpen(true);
+              return;
+            }
+            if (selectedNode) setNodeModalOpen(true);
+          }}
+          onDuplicate={selectedNode ? duplicateSelection : undefined}
+          onInvert={selectedEdge ? invertSelectedEdge : undefined}
           onAuto={setSelectedEdgeAutoRouting}
           onDeviationX={() => setSelectedEdgeDeviation("x")}
           onDeviationY={() => setSelectedEdgeDeviation("y")}

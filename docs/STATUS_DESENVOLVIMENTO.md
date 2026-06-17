@@ -49,6 +49,7 @@ resize visual
 exportação PNG real inicial
 paleta flutuante arrastável
 layout reutilizável
+roteamento inicial de handles inteligentes
 ```
 
 ---
@@ -64,6 +65,7 @@ src/lib/flow/validation.ts
 src/lib/flow/serialization.ts
 src/lib/flow/adapters.ts
 src/lib/flow/layout.ts
+src/lib/flow/edgeRouting.ts
 src/lib/export/exportPng.ts
 ```
 
@@ -78,6 +80,8 @@ package-lock.json
 src/lib/flow/types.ts
 src/lib/flow/example.ts
 src/lib/flow/store.ts
+src/lib/flow/schema.ts
+src/lib/flow/adapters.ts
 src/components/flow/FlowEditor.tsx
 src/components/flow/FluxoNode.tsx
 src/components/flow/Toolbar.tsx
@@ -232,7 +236,7 @@ Criado:
 src/lib/flow/schema.ts
 ```
 
-Objetivo: reexportar tipos, defaults, validação, normalização, serialização e layout para facilitar imports futuros.
+Objetivo: reexportar tipos, defaults, validação, normalização, serialização, layout e roteamento para facilitar imports futuros.
 
 ---
 
@@ -256,6 +260,8 @@ reactFlowToFlowProject(base, nodes, edges);
 ```
 
 Esses adapters começaram a ser usados diretamente no editor.
+
+Evolução mais recente: `flowProjectToReactFlow()` agora usa a camada de roteamento inicial para resolver handles `auto` ao importar/abrir fluxos, escolhendo `top/right/bottom/left` conforme a posição relativa entre os blocos.
 
 ---
 
@@ -351,14 +357,44 @@ Ainda precisa ser integrado ao botão do editor.
 
 ---
 
+## 15. Roteamento inicial de handles inteligentes
+
+Criado:
+
+```txt
+src/lib/flow/edgeRouting.ts
+```
+
+Objetivo:
+
+- calcular o melhor lado de saída/entrada entre dois blocos com base na posição relativa;
+- usar `right → left` quando o alvo está à direita;
+- usar `left → right` quando o alvo está à esquerda;
+- usar `bottom → top` quando o alvo está abaixo;
+- usar `top → bottom` quando o alvo está acima;
+- preservar handles definidos manualmente;
+- resolver apenas handles `auto` ou ausentes;
+- preparar a próxima etapa de recálculo dinâmico ao mover blocos.
+
+Integração atual:
+
+- `flowProjectToReactFlow()` já aplica essa resolução ao abrir/importar um fluxo.
+
+Limitação atual:
+
+- o editor ainda não recalcula dinamicamente as handles ao mover blocos; isso fica para a próxima rodada.
+
+---
+
 ## Próxima etapa recomendada
 
 ```txt
 1. Integrar calculateAutoLayout ao botão Organizar fluxo
 2. Melhorar histórico para registrar resize/move no momento correto
-3. Testar exportação PNG em fluxo grande
-4. Avaliar bugs visuais do NodeResizer
-5. Preparar desktopBridge antes de Electron
+3. Recalcular handles automaticamente ao mover blocos
+4. Testar exportação PNG em fluxo grande
+5. Avaliar bugs visuais do NodeResizer
+6. Preparar desktopBridge antes de Electron
 ```
 
 ---

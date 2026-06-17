@@ -62,6 +62,7 @@ export { calculateAutoLayout } from "./layout";
 export type { AutoLayoutOptions } from "./layout";
 export {
   applySmartHandlesToReactFlowEdges,
+  getManualRouteControlPoint,
   getSmartHandles,
   resolveReactFlowEdgeHandles,
   resolveSerializedEdgeHandles,

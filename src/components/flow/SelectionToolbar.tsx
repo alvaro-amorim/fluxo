@@ -26,15 +26,15 @@ export function SelectionToolbar({
     <div className="absolute left-1/2 top-16 z-40 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur">
       {hasEdgeSelection ? (
         <>
-          <ToolbarButton onClick={onAuto} title="Roteamento automático">
+          <ToolbarButton onClick={onAuto} title="Recalcular automaticamente a melhor saída e entrada da seta">
             <Route className="h-3.5 w-3.5" />
             Auto
           </ToolbarButton>
-          <ToolbarButton onClick={onDeviationX} title="Adicionar desvio horizontal">
+          <ToolbarButton onClick={onDeviationX} title="Criar um desvio lateral manual na seta selecionada">
             <CornerDownRight className="h-3.5 w-3.5" />
             Desvio X
           </ToolbarButton>
-          <ToolbarButton onClick={onDeviationY} title="Adicionar desvio vertical">
+          <ToolbarButton onClick={onDeviationY} title="Criar um desvio vertical manual na seta selecionada">
             <CornerRightDown className="h-3.5 w-3.5" />
             Desvio Y
           </ToolbarButton>
@@ -42,7 +42,7 @@ export function SelectionToolbar({
       ) : null}
       <ToolbarButton
         onClick={onRemove}
-        title="Remover seleção"
+        title="Remover o bloco ou seta selecionado. Atalho: Delete"
         className="text-destructive hover:text-destructive"
       >
         <Trash2 className="h-3.5 w-3.5" />

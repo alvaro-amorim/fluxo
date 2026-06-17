@@ -65,7 +65,17 @@ export {
   getManualRouteControlPoint,
   getManualRouteControlPoints,
   getSmartHandles,
+  insertManualRoutePoint,
+  normalizeManualRoutePoints,
+  nudgeManualRoutePoints,
+  removeManualRoutePoint,
+  replaceManualRoutePoint,
   resolveReactFlowEdgeHandles,
   resolveSerializedEdgeHandles,
 } from "./edgeRouting";
-export type { ManualRouteAxis, ManualRoutePointsOptions, SmartHandles } from "./edgeRouting";
+export type {
+  ManualRouteAxis,
+  ManualRoutePoint,
+  ManualRoutePointsOptions,
+  SmartHandles,
+} from "./edgeRouting";

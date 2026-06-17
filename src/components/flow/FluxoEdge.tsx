@@ -43,23 +43,24 @@ export function FluxoEdge(props: EdgeProps) {
   const hiddenInfo = data?.hiddenInfo;
   const stroke = style?.stroke ?? data?.style?.stroke ?? "#64748b";
   const strokeWidth = Number(style?.strokeWidth ?? data?.style?.strokeWidth ?? 2);
+  const sanitizedManualPoints = sanitizePoints(manualPoints);
 
   return (
     <>
       <BaseEdge
         id={`${id}-interaction`}
         path={path}
-        interactionWidth={24}
+        interactionWidth={28}
         style={{
           stroke: "transparent",
-          strokeWidth: 18,
+          strokeWidth: 20,
         }}
       />
       <BaseEdge
         id={id}
         path={path}
         markerEnd={markerEnd}
-        interactionWidth={18}
+        interactionWidth={22}
         style={{
           stroke: selected ? "var(--brand)" : stroke,
           strokeWidth: selected ? Math.max(strokeWidth + 0.75, 2.75) : strokeWidth,
@@ -68,16 +69,19 @@ export function FluxoEdge(props: EdgeProps) {
         }}
       />
 
-      {manualPoints.length > 0 && selected ? (
+      {sanitizedManualPoints.length > 0 && selected ? (
         <EdgeLabelRenderer>
-          {manualPoints.map((point, index) => (
+          {sanitizedManualPoints.map((point, index) => (
             <div
               key={`${id}-manual-point-${index}`}
-              className="nodrag nopan pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-background bg-brand shadow-sm"
+              className="nodrag nopan pointer-events-none absolute flex h-3 w-3 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-background bg-brand text-[7px] font-semibold leading-none text-background shadow-sm"
               style={{
                 transform: `translate(-50%, -50%) translate(${point.x}px, ${point.y}px)`,
               }}
-            />
+              title={`Ponto manual ${index + 1}`}
+            >
+              {index + 1}
+            </div>
           ))}
         </EdgeLabelRenderer>
       ) : null}
@@ -119,8 +123,10 @@ function getFluxoEdgePath({
   targetPosition: EdgeProps["targetPosition"];
   manualPoints: Point[];
 }): EdgePath {
-  if (manualPoints.length > 0) {
-    return getManualPath({ sourceX, sourceY, targetX, targetY, manualPoints });
+  const sanitizedManualPoints = sanitizePoints(manualPoints);
+
+  if (sanitizedManualPoints.length > 0) {
+    return getManualPath({ sourceX, sourceY, targetX, targetY, manualPoints: sanitizedManualPoints });
   }
 
   if (lineType === "straight") {
@@ -162,8 +168,7 @@ function getManualPath({
   targetY: number;
   manualPoints: Point[];
 }): EdgePath {
-  const sanitizedPoints = manualPoints.filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
-  const pathPoints = [{ x: sourceX, y: sourceY }, ...sanitizedPoints, { x: targetX, y: targetY }];
+  const pathPoints = [{ x: sourceX, y: sourceY }, ...manualPoints, { x: targetX, y: targetY }];
   const path = pathPoints
     .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x},${point.y}`)
     .join(" ");
@@ -172,11 +177,22 @@ function getManualPath({
   return [path, labelPoint.x, labelPoint.y];
 }
 
+function sanitizePoints(points: Point[]): Point[] {
+  return points.filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+}
+
 function getPathLabelPoint(points: Point[]): Point {
-  if (points.length <= 2) {
+  if (points.length <= 0) return { x: 0, y: 0 };
+
+  if (points.length === 1) {
+    return points[0] ?? { x: 0, y: 0 };
+  }
+
+  if (points.length === 2) {
+    const [start, end] = points;
     return {
-      x: (points[0]?.x ?? 0 + (points[1]?.x ?? 0)) / 2,
-      y: (points[0]?.y ?? 0 + (points[1]?.y ?? 0)) / 2,
+      x: ((start?.x ?? 0) + (end?.x ?? 0)) / 2,
+      y: ((start?.y ?? 0) + (end?.y ?? 0)) / 2,
     };
   }
 

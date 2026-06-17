@@ -24,6 +24,13 @@ function shapeStyles(shape: ShapeType, w: number, h: number): React.CSSPropertie
   }
 }
 
+const HANDLE_POSITIONS = [
+  { id: "top", position: Position.Top },
+  { id: "right", position: Position.Right },
+  { id: "bottom", position: Position.Bottom },
+  { id: "left", position: Position.Left },
+] as const;
+
 function FluxoNodeComponent({ id, data, selected }: NodeProps) {
   const d = data as FluxoNodeData;
   const { setNodes } = useReactFlow();
@@ -114,10 +121,24 @@ function FluxoNodeComponent({ id, data, selected }: NodeProps) {
         </div>
       ) : null}
 
-      <Handle type="target" position={Position.Top} id="top" />
-      <Handle type="source" position={Position.Bottom} id="bottom" />
-      <Handle type="target" position={Position.Left} id="left" />
-      <Handle type="source" position={Position.Right} id="right" />
+      {HANDLE_POSITIONS.map((handle) => (
+        <Handle
+          key={`source-${handle.id}`}
+          type="source"
+          position={handle.position}
+          id={handle.id}
+          className="!h-2 !w-2 !border !border-slate-400 !bg-white opacity-0 transition group-hover:opacity-80"
+        />
+      ))}
+      {HANDLE_POSITIONS.map((handle) => (
+        <Handle
+          key={`target-${handle.id}`}
+          type="target"
+          position={handle.position}
+          id={handle.id}
+          className="!h-3 !w-3 !border-0 !bg-transparent"
+        />
+      ))}
     </div>
   );
 }

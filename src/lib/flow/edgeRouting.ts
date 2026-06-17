@@ -25,6 +25,8 @@ export type SmartHandles = {
   targetHandle: FlowHandlePosition;
 };
 
+export type ManualRouteVariant = "horizontal" | "vertical";
+
 export function getSmartHandles(source: Rect, target: Rect): SmartHandles {
   const dx = target.centerX - source.centerX;
   const dy = target.centerY - source.centerY;
@@ -63,6 +65,7 @@ export function resolveSerializedEdgeHandles(
     targetHandle: smart.targetHandle,
     routing: {
       ...(edge.routing ?? { points: [], avoidCrossings: true }),
+      points: [],
       mode: "auto",
     },
   };
@@ -118,8 +121,9 @@ export function applySmartHandlesToReactFlowEdges(nodes: Node[], edges: Edge[]):
     const dataHandleChanged =
       data?.sourceHandle !== handles.sourceHandle || data?.targetHandle !== handles.targetHandle;
     const routingModeChanged = Boolean(data) && data?.routing?.mode !== nextRoutingMode;
+    const shouldClearAutoPoints = Boolean(data) && nextRoutingMode === "auto" && Boolean(data?.routing?.points?.length);
 
-    if (!edgeHandleChanged && !dataHandleChanged && !routingModeChanged) {
+    if (!edgeHandleChanged && !dataHandleChanged && !routingModeChanged && !shouldClearAutoPoints) {
       return edge;
     }
 
@@ -134,12 +138,54 @@ export function applySmartHandlesToReactFlowEdges(nodes: Node[], edges: Edge[]):
             targetHandle: handles.targetHandle,
             routing: {
               ...(data.routing ?? { points: [], avoidCrossings: true }),
+              points: nextRoutingMode === "auto" ? [] : (data.routing?.points ?? []),
               mode: nextRoutingMode,
             },
           }
         : edge.data,
     };
   });
+}
+
+export function buildManualRoutePoints(
+  edge: Edge,
+  nodes: Node[],
+  variant: ManualRouteVariant,
+): Array<{ x: number; y: number }> {
+  const source = nodes.find((node) => node.id === edge.source);
+  const target = nodes.find((node) => node.id === edge.target);
+  if (!source || !target) return [];
+
+  const sourceRect = reactFlowNodeToRect(source);
+  const targetRect = reactFlowNodeToRect(target);
+  const data = edge.data as Partial<FluxoEdgeData> | undefined;
+  const smart = getSmartHandles(sourceRect, targetRect);
+
+  const sourceHandle = normalizeHandle(edge.sourceHandle ?? data?.sourceHandle);
+  const targetHandle = normalizeHandle(edge.targetHandle ?? data?.targetHandle);
+
+  const sourceAnchor = getAnchorPoint(
+    sourceRect,
+    sourceHandle === "auto" ? smart.sourceHandle : sourceHandle,
+  );
+  const targetAnchor = getAnchorPoint(
+    targetRect,
+    targetHandle === "auto" ? smart.targetHandle : targetHandle,
+  );
+
+  if (variant === "horizontal") {
+    const midX = Math.round((sourceAnchor.x + targetAnchor.x) / 2);
+    return [
+      { x: midX, y: sourceAnchor.y },
+      { x: midX, y: targetAnchor.y },
+    ];
+  }
+
+  const midY = Math.round((sourceAnchor.y + targetAnchor.y) / 2);
+  return [
+    { x: sourceAnchor.x, y: midY },
+    { x: targetAnchor.x, y: midY },
+  ];
 }
 
 function serializedNodeToRect(node: NodeLike): Rect {
@@ -171,6 +217,14 @@ function reactFlowNodeToRect(node: Node): Rect {
     centerX: node.position.x + width / 2,
     centerY: node.position.y + height / 2,
   };
+}
+
+function getAnchorPoint(rect: Rect, handle: FlowHandlePosition) {
+  if (handle === "top") return { x: rect.centerX, y: rect.y };
+  if (handle === "right") return { x: rect.x + rect.width, y: rect.centerY };
+  if (handle === "bottom") return { x: rect.centerX, y: rect.y + rect.height };
+  if (handle === "left") return { x: rect.x, y: rect.centerY };
+  return { x: rect.centerX, y: rect.centerY };
 }
 
 function shouldAutoRouteEdge(

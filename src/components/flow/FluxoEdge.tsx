@@ -10,6 +10,7 @@ import {
 import type { EdgeLineType, FluxoEdgeData } from "@/lib/flow/types";
 
 type EdgePath = [path: string, labelX: number, labelY: number];
+type Point = { x: number; y: number };
 
 export function FluxoEdge(props: EdgeProps) {
   const {
@@ -26,6 +27,7 @@ export function FluxoEdge(props: EdgeProps) {
   } = props;
   const data = props.data as FluxoEdgeData | undefined;
   const lineType = data?.lineType ?? "orthogonal";
+  const manualPoints = data?.routing?.mode === "manual" ? data.routing.points ?? [] : [];
   const [path, labelX, labelY] = getFluxoEdgePath({
     lineType,
     sourceX,
@@ -34,25 +36,51 @@ export function FluxoEdge(props: EdgeProps) {
     targetY,
     sourcePosition,
     targetPosition,
-    controlPoint: data?.routing?.mode === "manual" ? data.routing.points?.[0] : undefined,
+    manualPoints,
   });
 
   const label = data?.label;
   const hiddenInfo = data?.hiddenInfo;
+  const stroke = style?.stroke ?? data?.style?.stroke ?? "#64748b";
+  const strokeWidth = Number(style?.strokeWidth ?? data?.style?.strokeWidth ?? 2);
 
   return (
     <>
+      <BaseEdge
+        id={`${id}-interaction`}
+        path={path}
+        interactionWidth={24}
+        style={{
+          stroke: "transparent",
+          strokeWidth: 18,
+        }}
+      />
       <BaseEdge
         id={id}
         path={path}
         markerEnd={markerEnd}
         interactionWidth={18}
         style={{
-          stroke: selected ? "var(--brand)" : (style?.stroke ?? "#64748b"),
-          strokeWidth: selected ? 2.5 : (style?.strokeWidth ?? 2),
+          stroke: selected ? "var(--brand)" : stroke,
+          strokeWidth: selected ? Math.max(strokeWidth + 0.75, 2.75) : strokeWidth,
           strokeDasharray: style?.strokeDasharray,
+          filter: selected ? "drop-shadow(0 1px 3px rgba(0,0,0,0.25))" : undefined,
         }}
       />
+
+      {manualPoints.length > 0 && selected ? (
+        <EdgeLabelRenderer>
+          {manualPoints.map((point, index) => (
+            <div
+              key={`${id}-manual-point-${index}`}
+              className="nodrag nopan pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-background bg-brand shadow-sm"
+              style={{
+                transform: `translate(-50%, -50%) translate(${point.x}px, ${point.y}px)`,
+              }}
+            />
+          ))}
+        </EdgeLabelRenderer>
+      ) : null}
 
       {label || hiddenInfo ? (
         <EdgeLabelRenderer>
@@ -62,7 +90,7 @@ export function FluxoEdge(props: EdgeProps) {
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
               pointerEvents: "all",
             }}
-            title={hiddenInfo || undefined}
+            title={hiddenInfo || "Duplo clique para editar a conexão"}
           >
             {label ? <span>{label}</span> : <span className="text-muted-foreground">Info</span>}
           </div>
@@ -80,7 +108,7 @@ function getFluxoEdgePath({
   targetY,
   sourcePosition,
   targetPosition,
-  controlPoint,
+  manualPoints,
 }: {
   lineType: EdgeLineType;
   sourceX: number;
@@ -89,8 +117,12 @@ function getFluxoEdgePath({
   targetY: number;
   sourcePosition: EdgeProps["sourcePosition"];
   targetPosition: EdgeProps["targetPosition"];
-  controlPoint?: { x: number; y: number };
+  manualPoints: Point[];
 }): EdgePath {
+  if (manualPoints.length > 0) {
+    return getManualPath({ sourceX, sourceY, targetX, targetY, manualPoints });
+  }
+
   if (lineType === "straight") {
     return getStraightPath({ sourceX, sourceY, targetX, targetY });
   }
@@ -104,10 +136,6 @@ function getFluxoEdgePath({
       sourcePosition,
       targetPosition,
     });
-  }
-
-  if (controlPoint) {
-    return getManualPath({ sourceX, sourceY, targetX, targetY, controlPoint });
   }
 
   return getSmoothStepPath({
@@ -126,20 +154,51 @@ function getManualPath({
   sourceY,
   targetX,
   targetY,
-  controlPoint,
+  manualPoints,
 }: {
   sourceX: number;
   sourceY: number;
   targetX: number;
   targetY: number;
-  controlPoint: { x: number; y: number };
+  manualPoints: Point[];
 }): EdgePath {
-  const midX = (sourceX + targetX) / 2;
-  const midY = (sourceY + targetY) / 2;
-  const useXDeviation = Math.abs(controlPoint.x - midX) >= Math.abs(controlPoint.y - midY);
-  const path = useXDeviation
-    ? `M ${sourceX},${sourceY} L ${controlPoint.x},${sourceY} L ${controlPoint.x},${targetY} L ${targetX},${targetY}`
-    : `M ${sourceX},${sourceY} L ${sourceX},${controlPoint.y} L ${targetX},${controlPoint.y} L ${targetX},${targetY}`;
+  const sanitizedPoints = manualPoints.filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+  const pathPoints = [{ x: sourceX, y: sourceY }, ...sanitizedPoints, { x: targetX, y: targetY }];
+  const path = pathPoints
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x},${point.y}`)
+    .join(" ");
+  const labelPoint = getPathLabelPoint(pathPoints);
 
-  return [path, midX, midY];
+  return [path, labelPoint.x, labelPoint.y];
+}
+
+function getPathLabelPoint(points: Point[]): Point {
+  if (points.length <= 2) {
+    return {
+      x: (points[0]?.x ?? 0 + (points[1]?.x ?? 0)) / 2,
+      y: (points[0]?.y ?? 0 + (points[1]?.y ?? 0)) / 2,
+    };
+  }
+
+  let totalLength = 0;
+  const segments = points.slice(1).map((point, index) => {
+    const start = points[index]!;
+    const length = Math.hypot(point.x - start.x, point.y - start.y);
+    totalLength += length;
+    return { start, end: point, length };
+  });
+
+  let remaining = totalLength / 2;
+  for (const segment of segments) {
+    if (remaining <= segment.length) {
+      const ratio = segment.length === 0 ? 0 : remaining / segment.length;
+      return {
+        x: segment.start.x + (segment.end.x - segment.start.x) * ratio,
+        y: segment.start.y + (segment.end.y - segment.start.y) * ratio,
+      };
+    }
+    remaining -= segment.length;
+  }
+
+  return points[Math.floor(points.length / 2)] ?? { x: 0, y: 0 };
 }

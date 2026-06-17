@@ -127,11 +127,11 @@ function FluxoNodeComponent({ id, data, selected }: NodeProps) {
           type="source"
           position={handle.position}
           id={handle.id}
-          isConnectableStart
-          isConnectableEnd
-          className="!h-3 !w-3 !border !border-slate-400 !bg-white opacity-0 transition group-hover:opacity-90"
-          style={{ zIndex: 2 }}
-          title="Arraste daqui para criar uma seta saindo deste bloco"
+          isConnectableStart={true}
+          isConnectableEnd={false}
+          className="!h-3.5 !w-3.5 !border-2 !border-brand/60 !bg-white !shadow-sm opacity-0 transition-all group-hover:opacity-100 hover:!border-brand"
+          style={{ zIndex: 10, pointerEvents: "auto" }}
+          title="Arraste para criar uma conexão saindo deste bloco"
         />
       ))}
       {HANDLE_POSITIONS.map((handle) => (
@@ -141,10 +141,10 @@ function FluxoNodeComponent({ id, data, selected }: NodeProps) {
           position={handle.position}
           id={handle.id}
           isConnectableStart={false}
-          isConnectableEnd
-          className="!h-2 !w-2 !border-0 !bg-transparent"
-          style={{ zIndex: 1 }}
-          title="Solte aqui para conectar uma seta neste bloco"
+          isConnectableEnd={true}
+          className="!h-2.5 !w-2.5 !rounded-full !border-0 !bg-brand/80"
+          style={{ zIndex: 5, pointerEvents: "auto" }}
+          title="Solte para conectar uma seta entrando neste bloco"
         />
       ))}
     </div>

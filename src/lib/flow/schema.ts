@@ -63,8 +63,9 @@ export type { AutoLayoutOptions } from "./layout";
 export {
   applySmartHandlesToReactFlowEdges,
   getManualRouteControlPoint,
+  getManualRouteControlPoints,
   getSmartHandles,
   resolveReactFlowEdgeHandles,
   resolveSerializedEdgeHandles,
 } from "./edgeRouting";
-export type { SmartHandles } from "./edgeRouting";
+export type { ManualRouteAxis, ManualRoutePointsOptions, SmartHandles } from "./edgeRouting";

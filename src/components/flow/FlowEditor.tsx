@@ -291,6 +291,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     setEdges(prev.edges);
     setSelectedNode(null);
     setSelectedEdge(null);
+    setConnectionState(null);
     queueMicrotask(() => {
       isRestoringRef.current = false;
     });
@@ -305,6 +306,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     setEdges(next.edges);
     setSelectedNode(null);
     setSelectedEdge(null);
+    setConnectionState(null);
     queueMicrotask(() => {
       isRestoringRef.current = false;
     });
@@ -334,6 +336,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     setSelectedEdge(null);
     setNodeModalOpen(false);
     setEdgeModalOpen(false);
+    setConnectionState(null);
   }, [edges, nodes, selectedEdge?.id, selectedNode?.id, snapshot]);
 
   const duplicateSelection = useCallback(() => {
@@ -519,6 +522,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           setEdges(rf.edges);
           setSelectedNode(null);
           setSelectedEdge(null);
+          setConnectionState(null);
           toast.success("Fluxo importado.");
         } catch (error) {
           toast.error((error as Error).message || "Não foi possível importar o fluxo.");
@@ -602,6 +606,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         setSelectedEdge(null);
         setNodeModalOpen(false);
         setEdgeModalOpen(false);
+        setConnectionState(null);
         return;
       }
       if (e.key === "F11") {

@@ -5,8 +5,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, EyeOff, ArrowRight } from "lucide-react";
-import type { FluxoEdgeData, EdgeLineType, EdgeStrokeType } from "@/lib/flow/types";
+import { Trash2, EyeOff, ArrowRight, MoveHorizontal } from "lucide-react";
+import type {
+  FluxoEdgeData,
+  EdgeLineType,
+  EdgeStrokeType,
+  FlowHandlePosition,
+} from "@/lib/flow/types";
 
 const LINE_TYPES: { id: EdgeLineType; label: string }[] = [
   { id: "orthogonal", label: "Ortogonal" },
@@ -17,6 +22,13 @@ const LINE_TYPES: { id: EdgeLineType; label: string }[] = [
 const STROKES: { id: EdgeStrokeType; label: string }[] = [
   { id: "solid", label: "Contínua" },
   { id: "dashed", label: "Pontilhada" },
+];
+
+const HANDLE_OPTIONS: { id: Exclude<FlowHandlePosition, "auto">; label: string }[] = [
+  { id: "top", label: "Topo" },
+  { id: "right", label: "Direita" },
+  { id: "bottom", label: "Baixo" },
+  { id: "left", label: "Esquerda" },
 ];
 
 const PRIORITIES: {
@@ -49,6 +61,29 @@ export function EdgePropertiesModal({
   const update = (patch: Partial<FluxoEdgeData>) => setDraft({ ...draft, ...patch });
   const sem = (patch: Partial<FluxoEdgeData["semantic"]>) =>
     setDraft({ ...draft, semantic: { ...draft.semantic, ...patch } });
+
+  const setHandle = (field: "sourceHandle" | "targetHandle", value: FlowHandlePosition) => {
+    setDraft({
+      ...draft,
+      [field]: value,
+      routing: {
+        ...(draft.routing ?? { points: [], avoidCrossings: true }),
+        mode: "manual",
+      },
+    });
+  };
+
+  const useAutoRouting = () => {
+    setDraft({
+      ...draft,
+      sourceHandle: "auto",
+      targetHandle: "auto",
+      routing: {
+        ...(draft.routing ?? { points: [], avoidCrossings: true }),
+        mode: "auto",
+      },
+    });
+  };
 
   const submit = () => {
     onSave(draft);
@@ -114,6 +149,53 @@ export function EdgePropertiesModal({
                 onChange={(v) => update({ stroke: v as EdgeStrokeType })}
               />
             </Row>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent">
+                  <MoveHorizontal className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium">Direção da conexão</div>
+                  <div className="text-xs text-muted-foreground">
+                    Escolha de qual lado a seta sai e em qual lado ela entra.
+                  </div>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={useAutoRouting} className="rounded-full">
+                Automático
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Row label="Sai do bloco origem">
+                <SegmentedGroup
+                  options={HANDLE_OPTIONS}
+                  value={(draft.sourceHandle === "auto" ? "right" : draft.sourceHandle ?? "right") as Exclude<
+                    FlowHandlePosition,
+                    "auto"
+                  >}
+                  onChange={(v) => setHandle("sourceHandle", v as FlowHandlePosition)}
+                />
+              </Row>
+              <Row label="Entra no bloco destino">
+                <SegmentedGroup
+                  options={HANDLE_OPTIONS}
+                  value={(draft.targetHandle === "auto" ? "left" : draft.targetHandle ?? "left") as Exclude<
+                    FlowHandlePosition,
+                    "auto"
+                  >}
+                  onChange={(v) => setHandle("targetHandle", v as FlowHandlePosition)}
+                />
+              </Row>
+            </div>
+
+            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+              Manual trava os lados escolhidos. Automático recalcula os pontos quando o fluxo é
+              reaberto ou quando a lógica inteligente é aplicada.
+            </p>
           </div>
 
           <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
@@ -243,9 +325,7 @@ function SegmentedGroup<T extends string>({
             key={o.id}
             onClick={() => onChange(o.id)}
             className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs transition ${
-              active
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+              active ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {o.icon}

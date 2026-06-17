@@ -10,6 +10,7 @@ import { DEFAULT_NODE_SIZE } from "./defaults";
 
 type NodeLike = Pick<FluxoNodeSerialized, "id" | "position" | "size">;
 type PhysicalHandle = Exclude<FlowHandlePosition, "auto">;
+export type ManualRouteAxis = "x" | "y";
 
 type Rect = {
   id: string;
@@ -49,6 +50,12 @@ const OPPOSITE_HANDLE: Record<PhysicalHandle, PhysicalHandle> = {
 export type SmartHandles = {
   sourceHandle: PhysicalHandle;
   targetHandle: PhysicalHandle;
+};
+
+export type ManualRoutePointsOptions = {
+  axis: ManualRouteAxis;
+  offset?: number;
+  minimumGap?: number;
 };
 
 export function getSmartHandles(source: Rect, target: Rect): SmartHandles {
@@ -154,21 +161,36 @@ export function applySmartHandlesToReactFlowEdges(
 export function getManualRouteControlPoint(
   sourceNode: Node,
   targetNode: Node,
-  axis: "x" | "y",
+  axis: ManualRouteAxis,
   offset = 96,
 ): Point {
+  const points = getManualRouteControlPoints(sourceNode, targetNode, { axis, offset });
+  return points[0] ?? getRectMidpoint(reactFlowNodeToRect(sourceNode), reactFlowNodeToRect(targetNode));
+}
+
+export function getManualRouteControlPoints(
+  sourceNode: Node,
+  targetNode: Node,
+  options: ManualRoutePointsOptions,
+): Point[] {
   const source = reactFlowNodeToRect(sourceNode);
   const target = reactFlowNodeToRect(targetNode);
-  const midX = (source.centerX + target.centerX) / 2;
-  const midY = (source.centerY + target.centerY) / 2;
+  const offset = Math.max(options.offset ?? 96, 24);
+  const minimumGap = Math.max(options.minimumGap ?? 56, 16);
 
-  if (axis === "x") {
-    const direction = target.centerX >= source.centerX ? 1 : -1;
-    return { x: midX + offset * direction, y: midY };
+  if (options.axis === "x") {
+    const corridorX = getHorizontalManualCorridorX(source, target, offset, minimumGap);
+    return [
+      { x: corridorX, y: source.centerY },
+      { x: corridorX, y: target.centerY },
+    ];
   }
 
-  const direction = target.centerY >= source.centerY ? 1 : -1;
-  return { x: midX, y: midY + offset * direction };
+  const corridorY = getVerticalManualCorridorY(source, target, offset, minimumGap);
+  return [
+    { x: source.centerX, y: corridorY },
+    { x: target.centerX, y: corridorY },
+  ];
 }
 
 function scoreHandlePair(
@@ -267,6 +289,41 @@ function getHandlePoint(rect: Rect, handle: PhysicalHandle): Point {
   if (handle === "right") return { x: rect.right, y: rect.centerY };
   if (handle === "bottom") return { x: rect.centerX, y: rect.bottom };
   return { x: rect.left, y: rect.centerY };
+}
+
+function getRectMidpoint(source: Rect, target: Rect): Point {
+  return {
+    x: (source.centerX + target.centerX) / 2,
+    y: (source.centerY + target.centerY) / 2,
+  };
+}
+
+function getHorizontalManualCorridorX(
+  source: Rect,
+  target: Rect,
+  offset: number,
+  minimumGap: number,
+) {
+  if (source.right + minimumGap <= target.left) return (source.right + target.left) / 2;
+  if (target.right + minimumGap <= source.left) return (target.right + source.left) / 2;
+
+  const direction = target.centerX >= source.centerX ? 1 : -1;
+  const outerEdge = direction > 0 ? Math.max(source.right, target.right) : Math.min(source.left, target.left);
+  return outerEdge + offset * direction;
+}
+
+function getVerticalManualCorridorY(
+  source: Rect,
+  target: Rect,
+  offset: number,
+  minimumGap: number,
+) {
+  if (source.bottom + minimumGap <= target.top) return (source.bottom + target.top) / 2;
+  if (target.bottom + minimumGap <= source.top) return (target.bottom + source.top) / 2;
+
+  const direction = target.centerY >= source.centerY ? 1 : -1;
+  const outerEdge = direction > 0 ? Math.max(source.bottom, target.bottom) : Math.min(source.top, target.top);
+  return outerEdge + offset * direction;
 }
 
 function alignmentPenalty(alignment: number) {

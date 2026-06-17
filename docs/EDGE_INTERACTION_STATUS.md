@@ -48,7 +48,7 @@ Recursos já conectados:
 
 ---
 
-## Melhorias adicionadas nesta rodada
+## Melhorias adicionadas nesta etapa
 
 ### 1. Pontuação de handles inteligentes
 
@@ -64,21 +64,21 @@ Agora o algoritmo avalia todos os pares possíveis:
 
 ```txt
 top -> top
- top -> right
- top -> bottom
- top -> left
- right -> top
- right -> right
- right -> bottom
- right -> left
- bottom -> top
- bottom -> right
- bottom -> bottom
- bottom -> left
- left -> top
- left -> right
- left -> bottom
- left -> left
+top -> right
+top -> bottom
+top -> left
+right -> top
+right -> right
+right -> bottom
+right -> left
+bottom -> top
+bottom -> right
+bottom -> bottom
+bottom -> left
+left -> top
+left -> right
+left -> bottom
+left -> left
 ```
 
 A pontuação considera:
@@ -141,6 +141,41 @@ A edge customizada passou a preparar melhor rotas manuais:
 - destaque visual quando selecionada;
 - pontos de controle visíveis quando a seta manual está selecionada;
 - label posicionado no meio geométrico aproximado da rota.
+
+---
+
+## Refinamentos adicionados depois da integração do Codex
+
+### 1. Robustez da `FluxoEdge`
+
+Arquivo:
+
+```txt
+src/components/flow/FluxoEdge.tsx
+```
+
+A renderização da seta customizada foi refinada para:
+
+- corrigir o cálculo do ponto central usado pelo label em caminhos simples;
+- sanitizar `routing.points` antes de montar o path manual;
+- evitar que pontos inválidos quebrem a renderização da seta;
+- aumentar a área de interação da edge para facilitar clique;
+- numerar visualmente os pontos manuais quando a seta está selecionada.
+
+### 2. Clareza da toolbar contextual
+
+Arquivo:
+
+```txt
+src/components/flow/SelectionToolbar.tsx
+```
+
+A toolbar contextual recebeu textos de ajuda mais claros nos botões:
+
+- `Auto`: recalcula saída/entrada da seta;
+- `Desvio X`: cria desvio lateral manual;
+- `Desvio Y`: cria desvio vertical manual;
+- `Remover`: remove a seleção e informa o atalho `Delete`.
 
 ---
 

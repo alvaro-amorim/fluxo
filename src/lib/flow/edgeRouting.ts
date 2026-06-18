@@ -175,8 +175,8 @@ export function applySmartHandlesToReactFlowEdges(nodes: Node[], edges: Routable
 
     if (!source || !target) return edge;
 
-    const currentSourceHandle = normalizeHandle(edge.sourceHandle ?? data?.sourceHandle);
-    const currentTargetHandle = normalizeHandle(edge.targetHandle ?? data?.targetHandle);
+    const currentSourceHandle = normalizeHandle(data?.sourceHandle ?? edge.sourceHandle);
+    const currentTargetHandle = normalizeHandle(data?.targetHandle ?? edge.targetHandle);
     const sourceIsAuto = shouldUseSmartHandle(currentSourceHandle);
     const targetIsAuto = shouldUseSmartHandle(currentTargetHandle);
     const routeIsAuto = data?.routing?.mode !== "manual";

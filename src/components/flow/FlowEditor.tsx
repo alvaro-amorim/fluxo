@@ -174,14 +174,17 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         const data = edge.data as FluxoEdgeData | undefined;
         if (data?.routing?.mode !== "auto") return edge;
 
+        const sourceHandle = data.sourceHandle ?? edge.sourceHandle ?? "auto";
+        const targetHandle = data.targetHandle ?? edge.targetHandle ?? "auto";
+
         return {
           ...edge,
-          sourceHandle: "auto",
-          targetHandle: "auto",
+          sourceHandle,
+          targetHandle,
           data: {
             ...data,
-            sourceHandle: "auto",
-            targetHandle: "auto",
+            sourceHandle,
+            targetHandle,
           },
         };
       }),
@@ -230,22 +233,25 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
       try {
         if (!conn.source || !conn.target) return;
 
-        // Determinar direção real baseada no connectionState
+        // Determinar direÃ§Ã£o real baseada no connectionState
         let source = conn.source;
         let target = conn.target;
+        let sourceHandle = (conn.sourceHandle as FluxoEdgeSerialized["sourceHandle"]) ?? "auto";
+        let targetHandle = (conn.targetHandle as FluxoEdgeSerialized["targetHandle"]) ?? "auto";
 
         if (connectionState) {
           if (connectionState.nodeId === conn.source) {
-            // Manter source/target como estão
+            // Manter source/target como estÃ£o
           } else if (connectionState.nodeId === conn.target) {
-            // Inverter source/target
+            // Inverter source/target e também os handles correspondentes
             [source, target] = [target, source];
+            [sourceHandle, targetHandle] = [targetHandle, sourceHandle];
           }
         }
 
-        // Rejeitar self-loop após calcular a direção real
+        // Rejeitar self-loop apÃ³s calcular a direÃ§Ã£o real
         if (source === target) {
-          toast.warning("Conexões para o mesmo bloco não são permitidas");
+          toast.warning("ConexÃµes para o mesmo bloco nÃ£o sÃ£o permitidas");
           return;
         }
 
@@ -255,8 +261,8 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           id,
           source,
           target,
-          sourceHandle: (conn.sourceHandle as FluxoEdgeSerialized["sourceHandle"]) ?? "auto",
-          targetHandle: (conn.targetHandle as FluxoEdgeSerialized["targetHandle"]) ?? "auto",
+          sourceHandle,
+          targetHandle,
           label: undefined,
           hiddenInfo: "",
           type: "orthogonal",
@@ -287,7 +293,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         }
 
         if (pendingConnectionSource === node.id) {
-          toast.warning("Conexões para o mesmo bloco não são permitidas");
+          toast.warning("ConexÃµes para o mesmo bloco nÃ£o sÃ£o permitidas");
           return;
         }
 
@@ -418,7 +424,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         id: newId,
         selected: true,
         position: { x: node.position.x + 40, y: node.position.y + 40 },
-        data: { ...data, title: `${data.title} cópia` },
+        data: { ...data, title: `${data.title} cÃ³pia` },
       } satisfies Node;
     });
 
@@ -579,7 +585,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
       URL.revokeObjectURL(url);
       toast.success("Fluxo exportado.");
     } catch (error) {
-      toast.error((error as Error).message || "Não foi possível exportar o fluxo.");
+      toast.error((error as Error).message || "NÃ£o foi possÃ­vel exportar o fluxo.");
     }
   }, [nodes, edges, background]);
 
@@ -592,7 +598,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
       });
       toast.success("PNG exportado.");
     } catch (error) {
-      toast.error((error as Error).message || "Não foi possível exportar PNG.");
+      toast.error((error as Error).message || "NÃ£o foi possÃ­vel exportar PNG.");
     }
   }, [background]);
 
@@ -607,7 +613,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
       reader.onload = () => {
         const parsed = parseFlowFileJson(String(reader.result));
         if (!parsed.ok || !parsed.file) {
-          toast.error(parsed.error ?? "Arquivo inválido.");
+          toast.error(parsed.error ?? "Arquivo invÃ¡lido.");
           return;
         }
 
@@ -627,7 +633,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           setPendingConnectionSource(null);
           toast.success("Fluxo importado.");
         } catch (error) {
-          toast.error((error as Error).message || "Não foi possível importar o fluxo.");
+          toast.error((error as Error).message || "NÃ£o foi possÃ­vel importar o fluxo.");
         }
       };
       reader.readAsText(file);
@@ -930,7 +936,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
               />
             </div>
             <span className="hidden font-mono text-[10px] uppercase tracking-wider text-muted-foreground sm:inline">
-              · {nodes.length} blocos · {edges.length} setas
+              Â· {nodes.length} blocos Â· {edges.length} setas
             </span>
           </div>
 
@@ -939,7 +945,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="sm" className="rounded-full gap-1.5">
                   <Palette className="h-4 w-4" />
-                  Aparência
+                  AparÃªncia
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-72 space-y-3">
@@ -1031,7 +1037,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           className="absolute right-4 top-4 z-40 flex items-center gap-1.5 rounded-full border border-border bg-card/90 px-3 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur hover:text-foreground"
         >
           <X className="h-3.5 w-3.5" />
-          Sair do modo apresentação
+          Sair do modo apresentaÃ§Ã£o
         </button>
       )}
 

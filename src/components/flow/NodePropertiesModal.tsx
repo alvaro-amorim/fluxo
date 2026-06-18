@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Trash2, Type, Palette, Brain, EyeOff, X } from "lucide-react";
-import type { FluxoNodeData, ShapeType } from "@/lib/flow/types";
+import { DEFAULT_SEMANTIC, type FluxoNodeData, type ShapeType } from "@/lib/flow/types";
 
 type EditableColorKey = "backgroundColor" | "borderColor" | "textColor";
 
@@ -43,8 +43,17 @@ export function NodePropertiesModal({
   onSave: (d: FluxoNodeData) => void;
   onDelete?: () => void;
 }) {
-  const [draft, setDraft] = useState<FluxoNodeData | null>(data);
-  useEffect(() => setDraft(data), [data]);
+  const latestDataRef = useRef<FluxoNodeData | null>(data);
+  const [draft, setDraft] = useState<FluxoNodeData | null>(null);
+
+  useEffect(() => {
+    latestDataRef.current = data;
+  }, [data]);
+
+  useEffect(() => {
+    setDraft(open && latestDataRef.current ? createNodeDraft(latestDataRef.current) : null);
+  }, [open]);
+
   if (!draft) return null;
 
   const update = (patch: Partial<FluxoNodeData>) => setDraft({ ...draft, ...patch });
@@ -60,7 +69,7 @@ export function NodePropertiesModal({
     });
 
   const submit = () => {
-    onSave(draft);
+    onSave(createNodeDraft(draft));
     onOpenChange(false);
   };
 
@@ -294,6 +303,27 @@ export function NodePropertiesModal({
       </DialogContent>
     </Dialog>
   );
+}
+
+function createNodeDraft(data: FluxoNodeData): FluxoNodeData {
+  return {
+    shape: data.shape,
+    title: data.title ?? "",
+    summary: data.summary ?? "",
+    hiddenInfo: data.hiddenInfo ?? "",
+    style: { ...data.style },
+    icon: data.icon ? { ...data.icon } : { type: "none", name: "", customSrc: null },
+    semantic: {
+      objective: data.semantic?.objective ?? DEFAULT_SEMANTIC.objective,
+      inputs: [...(data.semantic?.inputs ?? DEFAULT_SEMANTIC.inputs)],
+      outputs: [...(data.semantic?.outputs ?? DEFAULT_SEMANTIC.outputs)],
+      rules: [...(data.semantic?.rules ?? DEFAULT_SEMANTIC.rules)],
+      notes: data.semantic?.notes ?? DEFAULT_SEMANTIC.notes,
+    },
+    width: data.width,
+    height: data.height,
+    customFields: data.customFields?.map((field) => ({ ...field })) ?? [],
+  };
 }
 
 function Field({

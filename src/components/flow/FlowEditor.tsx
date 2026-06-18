@@ -128,6 +128,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
   const historyRef = useRef<FlowSnapshot[]>([]);
   const futureRef = useRef<FlowSnapshot[]>([]);
   const isRestoringRef = useRef(false);
+  const inlineRenameNodeIdRef = useRef<string | null>(null);
 
   const snapshot = useCallback(() => {
     if (isRestoringRef.current) return;
@@ -788,6 +789,57 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     [selectedNode, snapshot],
   );
 
+  const activeSelectedNode = useMemo(
+    () =>
+      selectedNode ? (nodes.find((node) => node.id === selectedNode.id) ?? selectedNode) : null,
+    [nodes, selectedNode],
+  );
+
+  const updateSelectedNodeTitle = useCallback(
+    (title: string) => {
+      const nodeId = selectedNode?.id;
+      if (!nodeId) return;
+
+      if (inlineRenameNodeIdRef.current !== nodeId) {
+        snapshot();
+        inlineRenameNodeIdRef.current = nodeId;
+      }
+
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id !== nodeId) return node;
+
+          const data = node.data as FluxoNodeData;
+          return {
+            ...node,
+            data: {
+              ...data,
+              title,
+            },
+          };
+        }),
+      );
+
+      setSelectedNode((node) => {
+        if (!node || node.id !== nodeId) return node;
+
+        const data = node.data as FluxoNodeData;
+        return {
+          ...node,
+          data: {
+            ...data,
+            title,
+          },
+        };
+      });
+    },
+    [selectedNode?.id, snapshot],
+  );
+
+  const finishInlineRename = useCallback(() => {
+    inlineRenameNodeIdRef.current = null;
+  }, []);
+
   const onDeleteNode = useCallback(() => {
     if (!selectedNode) return;
     deleteSelection();
@@ -1038,15 +1090,17 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         <SelectionToolbar
           visible={Boolean(selectedNode || selectedEdge)}
           hasEdgeSelection={Boolean(selectedEdge)}
-          onEdit={
-            selectedNode || selectedEdge
-              ? () => {
-                  if (selectedNode) setNodeModalOpen(true);
-                  else if (selectedEdge) setEdgeModalOpen(true);
-                }
+          nodeTitle={
+            activeSelectedNode && !selectedEdge
+              ? ((activeSelectedNode.data as FluxoNodeData).title ?? "")
               : undefined
           }
-          onDuplicate={selectedNode && !selectedEdge ? duplicateSelection : undefined}
+          onNodeTitleChange={
+            activeSelectedNode && !selectedEdge ? updateSelectedNodeTitle : undefined
+          }
+          onNodeTitleCommit={finishInlineRename}
+          onEdit={selectedEdge ? () => setEdgeModalOpen(true) : undefined}
+          onDuplicate={activeSelectedNode && !selectedEdge ? duplicateSelection : undefined}
           onInvert={selectedEdge ? invertSelectedEdge : undefined}
           onAuto={setSelectedEdgeAutoRouting}
           onDeviationX={() => setSelectedEdgeDeviation("x")}

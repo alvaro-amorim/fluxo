@@ -1,16 +1,14 @@
-import { useCallback } from "react";
 import {
   BaseEdge,
   EdgeLabelRenderer,
   getBezierPath,
   getSmoothStepPath,
   getStraightPath,
-  useReactFlow,
   type EdgeProps,
 } from "@xyflow/react";
 
 import { normalizeManualRoutePoints, type ManualRoutePoint } from "@/lib/flow/edgeRouting";
-import type { EdgeLineType, FlowHandlePosition, FluxoEdgeData } from "@/lib/flow/types";
+import type { EdgeLineType, FluxoEdgeData } from "@/lib/flow/types";
 
 type EdgePath = [path: string, labelX: number, labelY: number, offsetX: number, offsetY: number];
 type Point = ManualRoutePoint;
@@ -48,8 +46,6 @@ export function FluxoEdge(props: EdgeProps) {
   const hiddenInfo = data?.hiddenInfo;
   const stroke = style?.stroke ?? data?.style?.stroke ?? "#64748b";
   const strokeWidth = Number(style?.strokeWidth ?? data?.style?.strokeWidth ?? 2);
-
-  const reverseDirection = () => null; // A lógica de inverter foi movida para FlowEditor
 
   return (
     <>
@@ -107,22 +103,6 @@ export function FluxoEdge(props: EdgeProps) {
           </div>
         </EdgeLabelRenderer>
       ) : null}
-
-      {selected && data && (
-        <EdgeLabelRenderer>
-          <button
-            type="button"
-            className="nodrag nopan pointer-events-auto absolute -translate-x-1/2 rounded-full border border-border bg-card px-2 py-1 text-[10px] font-medium text-muted-foreground shadow-sm transition hover:border-foreground/30 hover:text-foreground"
-            style={{
-              transform: `translate(-50%, 0) translate(${labelX}px, ${labelY + 22}px)`,
-            }}
-            title="Inverter direção da seta"
-            onClick={reverseDirection}
-          >
-            Inverter
-          </button>
-        </EdgeLabelRenderer>
-      )}
     </>
   );
 }
@@ -242,10 +222,4 @@ function getPathLabelPoint(points: Point[]): Point {
   }
 
   return points[Math.floor(points.length / 2)] ?? { x: 0, y: 0 };
-}
-
-function normalizeHandleForReverse(value: unknown): FlowHandlePosition {
-  return value === "top" || value === "right" || value === "bottom" || value === "left"
-    ? value
-    : "auto";
 }

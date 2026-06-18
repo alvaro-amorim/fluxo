@@ -140,8 +140,8 @@ export function resolveReactFlowEdgeHandles(
   const target = nodes.find((node) => node.id === edge.target);
   const edgeData = edge.data as Partial<FluxoEdgeData> | undefined;
 
-  const currentSourceHandle = normalizeHandle(edge.sourceHandle ?? edgeData?.sourceHandle);
-  const currentTargetHandle = normalizeHandle(edge.targetHandle ?? edgeData?.targetHandle);
+  const currentSourceHandle = normalizeHandle(edgeData?.sourceHandle ?? edge.sourceHandle);
+  const currentTargetHandle = normalizeHandle(edgeData?.targetHandle ?? edge.targetHandle);
 
   if (!source || !target) {
     return {
@@ -181,8 +181,14 @@ export function applySmartHandlesToReactFlowEdges(nodes: Node[], edges: Routable
     const targetIsAuto = shouldUseSmartHandle(currentTargetHandle);
     const routeIsAuto = data?.routing?.mode !== "manual";
 
+    const distributedHandles =
+      routeIsAuto && sourceIsAuto && targetIsAuto
+        ? getParallelDistributedHandles(edge, edges, source, target)
+        : null;
+
     const handles =
-      routeIsAuto && (sourceIsAuto || targetIsAuto)
+      distributedHandles ??
+      (routeIsAuto && (sourceIsAuto || targetIsAuto)
         ? getSmartHandlesForEdge({
             edge,
             source,
@@ -195,11 +201,22 @@ export function applySmartHandlesToReactFlowEdges(nodes: Node[], edges: Routable
             sideUsage,
           })
         : {
-            sourceHandle: handleOrFallback(currentSourceHandle, getFallbackHandles(source, target).sourceHandle),
-            targetHandle: handleOrFallback(currentTargetHandle, getFallbackHandles(source, target).targetHandle),
-          };
+            sourceHandle: handleOrFallback(
+              currentSourceHandle,
+              getFallbackHandles(source, target).sourceHandle,
+            ),
+            targetHandle: handleOrFallback(
+              currentTargetHandle,
+              getFallbackHandles(source, target).targetHandle,
+            ),
+          });
 
-    const polyline = getOrthogonalPolyline(source, target, handles.sourceHandle, handles.targetHandle);
+    const polyline = getOrthogonalPolyline(
+      source,
+      target,
+      handles.sourceHandle,
+      handles.targetHandle,
+    );
     const route: ResolvedRoute = {
       id: edge.id,
       source: edge.source,
@@ -219,8 +236,8 @@ export function applySmartHandlesToReactFlowEdges(nodes: Node[], edges: Routable
       data: data
         ? {
             ...data,
-            sourceHandle: handles.sourceHandle,
-            targetHandle: handles.targetHandle,
+            sourceHandle: sourceIsAuto ? "auto" : handles.sourceHandle,
+            targetHandle: targetIsAuto ? "auto" : handles.targetHandle,
           }
         : edge.data,
     };
@@ -329,6 +346,96 @@ export function nudgeManualRoutePoints(
   }));
 }
 
+function getParallelDistributedHandles(
+  edge: RoutableEdge,
+  edges: RoutableEdge[],
+  source: Rect,
+  target: Rect,
+): SmartHandles | null {
+  if (!edge.id) return null;
+
+  const group = edges
+    .filter((candidate) => {
+      if (!candidate.id) return false;
+      if (!isAutoRoutableEdge(candidate)) return false;
+      return (
+        getParallelPairKey(candidate.source, candidate.target) ===
+        getParallelPairKey(edge.source, edge.target)
+      );
+    })
+    .sort((a, b) => String(a.id ?? "").localeCompare(String(b.id ?? "")));
+
+  if (group.length <= 1) return null;
+
+  const index = group.findIndex((candidate) => candidate.id === edge.id);
+  if (index < 0) return null;
+
+  const lane = getParallelLaneIndex(index, group.length);
+  const sides = getPreferredOppositeSides(source, target);
+  const sourceHandles = getHandlesForSide(sides.sourceSide);
+  const targetHandles = getHandlesForSide(sides.targetSide);
+
+  return {
+    sourceHandle: sourceHandles[lane] ?? sourceHandles[1] ?? sourceHandles[0]!,
+    targetHandle: targetHandles[lane] ?? targetHandles[1] ?? targetHandles[0]!,
+  };
+}
+
+function isAutoRoutableEdge(edge: RoutableEdge) {
+  const data = edge.data as Partial<FluxoEdgeData> | undefined;
+  if (data?.routing?.mode === "manual") return false;
+
+  const sourceHandle = normalizeHandle(data?.sourceHandle ?? edge.sourceHandle);
+  const targetHandle = normalizeHandle(data?.targetHandle ?? edge.targetHandle);
+
+  return shouldUseSmartHandle(sourceHandle) && shouldUseSmartHandle(targetHandle);
+}
+
+function getParallelPairKey(source: string, target: string) {
+  return [source, target].sort().join("::");
+}
+
+function getParallelLaneIndex(index: number, total: number) {
+  if (total <= 1) return 1;
+  if (total === 2) return index === 0 ? 0 : 2;
+  if (total === 3) return index;
+
+  return index % 3;
+}
+
+function getPreferredOppositeSides(
+  source: Rect,
+  target: Rect,
+): {
+  sourceSide: HandleSide;
+  targetSide: HandleSide;
+} {
+  const dx = target.centerX - source.centerX;
+  const dy = target.centerY - source.centerY;
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    return dx >= 0
+      ? { sourceSide: "right", targetSide: "left" }
+      : { sourceSide: "left", targetSide: "right" };
+  }
+
+  return dy >= 0
+    ? { sourceSide: "bottom", targetSide: "top" }
+    : { sourceSide: "top", targetSide: "bottom" };
+}
+
+function getHandlesForSide(side: HandleSide): PhysicalHandle[] {
+  switch (side) {
+    case "right":
+      return ["right-top", "right", "right-bottom"];
+    case "left":
+      return ["left-top", "left", "left-bottom"];
+    case "top":
+      return ["top-left", "top", "top-right"];
+    case "bottom":
+      return ["bottom-left", "bottom", "bottom-right"];
+  }
+}
 function getSmartHandlesForEdge({
   edge,
   source,
@@ -368,7 +475,12 @@ function getSmartHandlesForEdge({
         sourceHandle: sourceDescriptor.id,
         targetHandle: targetDescriptor.id,
       };
-      const polyline = getOrthogonalPolyline(source, target, handles.sourceHandle, handles.targetHandle);
+      const polyline = getOrthogonalPolyline(
+        source,
+        target,
+        handles.sourceHandle,
+        handles.targetHandle,
+      );
       const score =
         scoreHandlePair(source, target, sourceDescriptor, targetDescriptor) +
         scoreUsage(edge, sourceDescriptor, targetDescriptor, portUsage, sideUsage) +
@@ -467,7 +579,10 @@ function scoreParallelRoutes(
     if (sameDirection) {
       if (route.sourceHandle === handles.sourceHandle) score += 180;
       if (route.targetHandle === handles.targetHandle) score += 180;
-      if (route.sourceHandle === handles.sourceHandle && route.targetHandle === handles.targetHandle) {
+      if (
+        route.sourceHandle === handles.sourceHandle &&
+        route.targetHandle === handles.targetHandle
+      ) {
         score += 320;
       }
     }
@@ -494,7 +609,12 @@ function scorePolylineAgainstRoutes(polyline: Point[], resolvedRoutes: ResolvedR
   return score;
 }
 
-function scorePolylineAgainstNodes(polyline: Point[], rects: Rect[], sourceId: string, targetId: string) {
+function scorePolylineAgainstNodes(
+  polyline: Point[],
+  rects: Rect[],
+  sourceId: string,
+  targetId: string,
+) {
   let score = 0;
 
   for (const rect of rects) {
@@ -564,7 +684,9 @@ function getOrthogonalPolyline(
 function normalizePolyline(points: Point[]) {
   return points.filter((point, index) => {
     const previous = points[index - 1];
-    return !previous || Math.abs(previous.x - point.x) > 0.5 || Math.abs(previous.y - point.y) > 0.5;
+    return (
+      !previous || Math.abs(previous.x - point.x) > 0.5 || Math.abs(previous.y - point.y) > 0.5
+    );
   });
 }
 
@@ -747,7 +869,9 @@ function shouldUseSmartHandle(handle: unknown) {
 
 function normalizeHandle(value: unknown): FlowHandlePosition {
   if (value === "auto") return "auto";
-  return typeof value === "string" && PHYSICAL_HANDLE_IDS.has(value) ? (value as PhysicalHandle) : "auto";
+  return typeof value === "string" && PHYSICAL_HANDLE_IDS.has(value)
+    ? (value as PhysicalHandle)
+    : "auto";
 }
 
 function handleOrFallback(handle: FlowHandlePosition, fallback: PhysicalHandle): PhysicalHandle {
@@ -792,11 +916,17 @@ function segmentsIntersect(first: Segment, second: Segment) {
 
 function segmentsOverlap(first: Segment, second: Segment) {
   if (isVerticalSegment(first) && isVerticalSegment(second)) {
-    return Math.abs(first.a.x - second.a.x) < 2 && rangesOverlap(first.a.y, first.b.y, second.a.y, second.b.y);
+    return (
+      Math.abs(first.a.x - second.a.x) < 2 &&
+      rangesOverlap(first.a.y, first.b.y, second.a.y, second.b.y)
+    );
   }
 
   if (isHorizontalSegment(first) && isHorizontalSegment(second)) {
-    return Math.abs(first.a.y - second.a.y) < 2 && rangesOverlap(first.a.x, first.b.x, second.a.x, second.b.x);
+    return (
+      Math.abs(first.a.y - second.a.y) < 2 &&
+      rangesOverlap(first.a.x, first.b.x, second.a.x, second.b.x)
+    );
   }
 
   return false;
@@ -815,8 +945,14 @@ function segmentIntersectsRect(segment: Segment, rect: Rect) {
   if (pointInsideRect(segment.a, rect) || pointInsideRect(segment.b, rect)) return true;
 
   const top: Segment = { a: { x: rect.left, y: rect.top }, b: { x: rect.right, y: rect.top } };
-  const right: Segment = { a: { x: rect.right, y: rect.top }, b: { x: rect.right, y: rect.bottom } };
-  const bottom: Segment = { a: { x: rect.right, y: rect.bottom }, b: { x: rect.left, y: rect.bottom } };
+  const right: Segment = {
+    a: { x: rect.right, y: rect.top },
+    b: { x: rect.right, y: rect.bottom },
+  };
+  const bottom: Segment = {
+    a: { x: rect.right, y: rect.bottom },
+    b: { x: rect.left, y: rect.bottom },
+  };
   const left: Segment = { a: { x: rect.left, y: rect.bottom }, b: { x: rect.left, y: rect.top } };
 
   return [top, right, bottom, left].some((side) => segmentsIntersect(segment, side));

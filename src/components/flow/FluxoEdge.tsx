@@ -46,6 +46,8 @@ export function FluxoEdge(props: EdgeProps) {
   const hiddenInfo = data?.hiddenInfo;
   const stroke = style?.stroke ?? data?.style?.stroke ?? "#64748b";
   const strokeWidth = Number(style?.strokeWidth ?? data?.style?.strokeWidth ?? 2);
+  const hasLabel = Boolean(label?.trim());
+  const hasHiddenInfo = Boolean(hiddenInfo?.trim());
 
   return (
     <>
@@ -89,17 +91,31 @@ export function FluxoEdge(props: EdgeProps) {
         </EdgeLabelRenderer>
       ) : null}
 
-      {label || hiddenInfo ? (
+      {hasLabel || hasHiddenInfo ? (
         <EdgeLabelRenderer>
           <div
-            className="nodrag nopan absolute max-w-[220px] -translate-x-1/2 -translate-y-1/2 rounded-md border border-border bg-card px-2 py-1 text-[11px] text-foreground shadow-sm"
+            className={`nodrag nopan absolute max-w-[260px] -translate-x-1/2 -translate-y-1/2 rounded-full border px-2.5 py-1 text-[11px] leading-none shadow-sm backdrop-blur-sm transition ${
+              selected
+                ? "border-brand/60 bg-card text-foreground ring-2 ring-brand/10"
+                : "border-border/80 bg-card/95 text-foreground/90"
+            }`}
             style={{
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-              pointerEvents: "all",
+              pointerEvents: selected ? "auto" : "none",
             }}
-            title={hiddenInfo || "Duplo clique para editar a conexão"}
+            title={hiddenInfo || label || "Duplo clique para editar a conexão"}
           >
-            {label ? <span>{label}</span> : <span className="text-muted-foreground">Info</span>}
+            <span className="flex max-w-[240px] items-center gap-1.5 truncate">
+              {hasHiddenInfo ? (
+                <span
+                  className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand/70"
+                  aria-hidden="true"
+                />
+              ) : null}
+              <span className={`truncate ${hasLabel ? "font-medium" : "text-muted-foreground"}`}>
+                {hasLabel ? label : "Info"}
+              </span>
+            </span>
           </div>
         </EdgeLabelRenderer>
       ) : null}

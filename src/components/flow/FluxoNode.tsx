@@ -31,12 +31,41 @@ const HANDLE_POSITIONS = [
   { id: "left", position: Position.Left },
 ] as const;
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getNodeTypography(w: number, h: number, isDiamond: boolean) {
+  const areaScale = Math.sqrt((w * h) / (180 * 80));
+  const heightScale = h / 80;
+  const shapeScale = isDiamond ? 0.92 : 1;
+
+  const titleFontSize = clamp(13 * areaScale * shapeScale, 10, 20);
+  const summaryFontSize = clamp(10 * areaScale * shapeScale, 8, 14);
+  const padding = clamp(Math.min(w, h) * 0.11, 8, 20);
+  const titleLineClamp = h < 62 ? 2 : h > 138 ? 4 : 3;
+  const summaryLineClamp = h > 136 ? 2 : 1;
+  const showSummary = h >= 64 && w >= 130;
+
+  return {
+    titleFontSize,
+    summaryFontSize,
+    padding,
+    titleLineClamp,
+    summaryLineClamp,
+    showSummary,
+    titleLineHeight: clamp(1.08 + heightScale * 0.04, 1.1, 1.22),
+    summaryLineHeight: 1.2,
+  };
+}
+
 function FluxoNodeComponent({ id, data, selected }: NodeProps) {
   const d = data as FluxoNodeData;
   const { setNodes } = useReactFlow();
   const w = d.width ?? 180;
   const h = d.height ?? 80;
   const isDiamond = d.shape === "diamond";
+  const typography = getNodeTypography(w, h, isDiamond);
 
   const baseStyle: React.CSSProperties = {
     width: w,
@@ -87,14 +116,38 @@ function FluxoNodeComponent({ id, data, selected }: NodeProps) {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            padding: 12,
+            padding: typography.padding,
             textAlign: "center",
             transform: isDiamond ? "rotate(-45deg)" : undefined,
           }}
         >
-          <div className="text-[13px] font-medium leading-snug line-clamp-3">{d.title}</div>
-          {d.summary ? (
-            <div className="mt-0.5 text-[10px] opacity-60 line-clamp-1">{d.summary}</div>
+          <div
+            className="font-medium"
+            style={{
+              fontSize: typography.titleFontSize,
+              lineHeight: typography.titleLineHeight,
+              display: "-webkit-box",
+              overflow: "hidden",
+              WebkitBoxOrient: "vertical",
+              WebkitLineClamp: typography.titleLineClamp,
+            }}
+          >
+            {d.title}
+          </div>
+          {typography.showSummary && d.summary ? (
+            <div
+              className="mt-1 opacity-60"
+              style={{
+                fontSize: typography.summaryFontSize,
+                lineHeight: typography.summaryLineHeight,
+                display: "-webkit-box",
+                overflow: "hidden",
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: typography.summaryLineClamp,
+              }}
+            >
+              {d.summary}
+            </div>
           ) : null}
         </div>
 

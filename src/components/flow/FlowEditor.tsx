@@ -93,6 +93,15 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
   const [edges, setEdges] = useState<Edge[]>(initial.edges);
   const [compactView, setCompactView] = useState(false);
 
+  const renderedNodes = useMemo<Node[]>(
+    () =>
+      nodes.map((node) => ({
+        ...node,
+        data: { ...(node.data as Record<string, unknown>), compactView },
+      })),
+    [nodes, compactView],
+  );
+
   const [tool, setTool] = useState<Tool>("select");
   const [pendingConnectionSource, setPendingConnectionSource] = useState<string | null>(null);
   const [toolbarMode, setToolbarMode] = useState<"side" | "floating">("side");
@@ -982,7 +991,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         }}
       >
         <ReactFlow
-          nodes={nodes}
+          nodes={renderedNodes}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}

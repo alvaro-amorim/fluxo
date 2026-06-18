@@ -17,7 +17,20 @@ export type ShapeType =
 // `smooth`, `dashed` e `no-arrow` ficam preparados para o schema oficial.
 export type EdgeLineType = "orthogonal" | "straight" | "bezier" | "smooth" | "dashed" | "no-arrow";
 export type EdgeStrokeType = "solid" | "dashed";
-export type FlowHandlePosition = "top" | "right" | "bottom" | "left" | "auto";
+export type FlowHandlePosition =
+  | "top-left"
+  | "top"
+  | "top-right"
+  | "right-top"
+  | "right"
+  | "right-bottom"
+  | "bottom-right"
+  | "bottom"
+  | "bottom-left"
+  | "left-bottom"
+  | "left"
+  | "left-top"
+  | "auto";
 export type FlowLayoutDirection = "vertical" | "horizontal" | "radial" | "compact";
 
 export interface FlowViewport {
@@ -176,7 +189,7 @@ export interface FlowFile {
     name: string;
     description?: string;
     createdAt?: string;
-    updatedAt?: string;
+    updatedAt: string;
     background: string;
     viewport: FlowViewport;
     settings?: FlowProjectSettings;

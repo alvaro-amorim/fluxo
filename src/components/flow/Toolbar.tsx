@@ -19,6 +19,7 @@ import {
   Magnet,
   PanelLeft,
   Move,
+  Minimize2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,8 +32,10 @@ export interface ToolbarProps {
   onToolChange: (t: Tool) => void;
   gridOn: boolean;
   snapOn: boolean;
+  compactView: boolean;
   onToggleGrid: () => void;
   onToggleSnap: () => void;
+  onToggleCompactView: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onOrganize: () => void;
@@ -161,6 +164,13 @@ export function Toolbar(props: ToolbarProps) {
           shortcut="S"
           active={props.snapOn}
           onClick={props.onToggleSnap}
+        />
+        <ToolRow
+          icon={Minimize2}
+          label="Compacto"
+          shortcut=""
+          active={props.compactView}
+          onClick={props.onToggleCompactView}
         />
         <ToolRow
           icon={Maximize2}

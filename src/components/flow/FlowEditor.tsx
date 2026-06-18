@@ -91,6 +91,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
   const initial = useMemo(() => flowProjectToReactFlow(initialProject), [initialProject]);
   const [nodes, setNodes] = useState<Node[]>(initial.nodes);
   const [edges, setEdges] = useState<Edge[]>(initial.edges);
+  const [compactView, setCompactView] = useState(false);
 
   const [tool, setTool] = useState<Tool>("select");
   const [pendingConnectionSource, setPendingConnectionSource] = useState<string | null>(null);
@@ -1052,8 +1053,10 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         onToolChange={setTool}
         gridOn={gridOn}
         snapOn={snapOn}
+        compactView={compactView}
         onToggleGrid={() => setGridOn((v) => !v)}
         onToggleSnap={() => setSnapOn((v) => !v)}
+        onToggleCompactView={() => setCompactView((v) => !v)}
         onUndo={undo}
         onRedo={redo}
         onOrganize={() => organize("horizontal")}

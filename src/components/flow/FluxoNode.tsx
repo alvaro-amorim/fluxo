@@ -35,17 +35,21 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function getNodeTypography(w: number, h: number, isDiamond: boolean) {
+function getNodeTypography(w: number, h: number, isDiamond: boolean, compactView: boolean) {
   const areaScale = Math.sqrt((w * h) / (180 * 80));
   const heightScale = h / 80;
   const shapeScale = isDiamond ? 0.92 : 1;
 
   const titleFontSize = clamp(13 * areaScale * shapeScale, 10, 20);
-  const summaryFontSize = clamp(10 * areaScale * shapeScale, 8, 14);
-  const padding = clamp(Math.min(w, h) * 0.11, 8, 20);
+  const summaryFontSize = compactView
+    ? clamp(8 * areaScale * shapeScale, 6, 10)
+    : clamp(10 * areaScale * shapeScale, 8, 14);
+  const padding = compactView
+    ? clamp(Math.min(w, h) * 0.06, 4, 12)
+    : clamp(Math.min(w, h) * 0.11, 8, 20);
   const titleLineClamp = h < 62 ? 2 : h > 138 ? 4 : 3;
-  const summaryLineClamp = h > 136 ? 2 : 1;
-  const showSummary = h >= 64 && w >= 130;
+  const summaryLineClamp = compactView ? 1 : h > 136 ? 2 : 1;
+  const showSummary = compactView ? h >= 80 && w >= 130 : h >= 64 && w >= 130;
 
   return {
     titleFontSize,
@@ -60,12 +64,13 @@ function getNodeTypography(w: number, h: number, isDiamond: boolean) {
 }
 
 function FluxoNodeComponent({ id, data, selected }: NodeProps) {
-  const d = data as FluxoNodeData;
+  const d = data as FluxoNodeData & { compactView?: boolean };
   const { setNodes } = useReactFlow();
   const w = d.width ?? 180;
   const h = d.height ?? 80;
   const isDiamond = d.shape === "diamond";
-  const typography = getNodeTypography(w, h, isDiamond);
+  const compactView = d.compactView ?? false;
+  const typography = getNodeTypography(w, h, isDiamond, compactView);
 
   const baseStyle: React.CSSProperties = {
     width: w,

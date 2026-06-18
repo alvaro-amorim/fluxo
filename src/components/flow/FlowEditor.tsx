@@ -519,6 +519,42 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     [nodes, updateSelectedEdge],
   );
 
+  const invertSelectedEdge = useCallback(() => {
+    if (!selectedEdge) return;
+
+    snapshot();
+    setEdges((eds) => {
+      const nextEdges = eds.map((edge) => {
+        if (edge.id !== selectedEdge.id) return edge;
+
+        const data = edge.data as FluxoEdgeData | undefined;
+
+        return {
+          ...edge,
+          source: edge.target,
+          target: edge.source,
+          sourceHandle: "auto",
+          targetHandle: "auto",
+          data: data
+            ? {
+                ...data,
+                sourceHandle: "auto",
+                targetHandle: "auto",
+                routing: {
+                  ...(data.routing ?? {}),
+                  mode: "auto",
+                  points: [],
+                },
+              }
+            : edge.data,
+        } satisfies Edge;
+      });
+
+      const resolvedEdges = resolveAutoEdges(nodes, nextEdges);
+      setSelectedEdge(resolvedEdges.find((edge) => edge.id === selectedEdge.id) ?? null);
+      return resolvedEdges;
+    });
+  }, [nodes, resolveAutoEdges, selectedEdge, snapshot]);
   const exportJson = useCallback(() => {
     try {
       const current = reactFlowToFlowProject({ ...projectRef.current, background }, nodes, edges);
@@ -992,6 +1028,16 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         <SelectionToolbar
           visible={Boolean(selectedNode || selectedEdge)}
           hasEdgeSelection={Boolean(selectedEdge)}
+          onEdit={
+            selectedNode || selectedEdge
+              ? () => {
+                  if (selectedNode) setNodeModalOpen(true);
+                  else if (selectedEdge) setEdgeModalOpen(true);
+                }
+              : undefined
+          }
+          onDuplicate={selectedNode && !selectedEdge ? duplicateSelection : undefined}
+          onInvert={selectedEdge ? invertSelectedEdge : undefined}
           onAuto={setSelectedEdgeAutoRouting}
           onDeviationX={() => setSelectedEdgeDeviation("x")}
           onDeviationY={() => setSelectedEdgeDeviation("y")}

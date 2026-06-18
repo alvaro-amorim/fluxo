@@ -33,10 +33,14 @@ export function SelectionToolbar({
       {onEdit ? (
         <ToolbarButton
           onClick={onEdit}
-          title="Editar propriedades do item selecionado. Atalho: duplo clique"
+          title={
+            hasEdgeSelection
+              ? "Editar propriedades da seta selecionada. Atalho: duplo clique"
+              : "Editar rapidamente o nome do bloco. O campo Título abre em foco. Atalho: duplo clique"
+          }
         >
           <Pencil className="h-3.5 w-3.5" />
-          Editar
+          {hasEdgeSelection ? "Editar" : "Nome"}
         </ToolbarButton>
       ) : null}
 

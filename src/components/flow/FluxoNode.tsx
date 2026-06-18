@@ -1,6 +1,15 @@
 import { memo } from "react";
 import { Handle, NodeResizer, Position, useReactFlow, type NodeProps } from "@xyflow/react";
-import type { FluxoNodeData, ShapeType } from "@/lib/flow/types";
+import type { FlowHandlePosition, FluxoNodeData, ShapeType } from "@/lib/flow/types";
+
+type PhysicalHandlePosition = Exclude<FlowHandlePosition, "auto">;
+
+type RenderHandle = {
+  id: PhysicalHandlePosition;
+  label: string;
+  position: Position;
+  style: React.CSSProperties;
+};
 
 function shapeStyles(shape: ShapeType, w: number, h: number): React.CSSProperties {
   switch (shape) {
@@ -24,12 +33,20 @@ function shapeStyles(shape: ShapeType, w: number, h: number): React.CSSPropertie
   }
 }
 
-const HANDLE_POSITIONS = [
-  { id: "top", position: Position.Top },
-  { id: "right", position: Position.Right },
-  { id: "bottom", position: Position.Bottom },
-  { id: "left", position: Position.Left },
-] as const;
+const HANDLE_POSITIONS: RenderHandle[] = [
+  { id: "top-left", label: "Topo esquerdo", position: Position.Top, style: { left: "25%" } },
+  { id: "top", label: "Topo central", position: Position.Top, style: { left: "50%" } },
+  { id: "top-right", label: "Topo direito", position: Position.Top, style: { left: "75%" } },
+  { id: "right-top", label: "Direita superior", position: Position.Right, style: { top: "25%" } },
+  { id: "right", label: "Direita central", position: Position.Right, style: { top: "50%" } },
+  { id: "right-bottom", label: "Direita inferior", position: Position.Right, style: { top: "75%" } },
+  { id: "bottom-right", label: "Baixo direito", position: Position.Bottom, style: { left: "75%" } },
+  { id: "bottom", label: "Baixo central", position: Position.Bottom, style: { left: "50%" } },
+  { id: "bottom-left", label: "Baixo esquerdo", position: Position.Bottom, style: { left: "25%" } },
+  { id: "left-bottom", label: "Esquerda inferior", position: Position.Left, style: { top: "75%" } },
+  { id: "left", label: "Esquerda central", position: Position.Left, style: { top: "50%" } },
+  { id: "left-top", label: "Esquerda superior", position: Position.Left, style: { top: "25%" } },
+];
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -187,9 +204,9 @@ function FluxoNodeComponent({ id, data, selected }: NodeProps) {
           id={handle.id}
           isConnectableStart
           isConnectableEnd
-          className="!h-3 !w-3 !border !border-slate-400 !bg-white opacity-0 transition group-hover:opacity-90"
-          style={{ zIndex: 2 }}
-          title="Arraste daqui para criar uma seta saindo deste bloco"
+          className="!h-2.5 !w-2.5 !border !border-slate-400 !bg-white opacity-0 shadow-sm transition group-hover:opacity-90"
+          style={{ ...handle.style, zIndex: 2 }}
+          title={`Arraste daqui para criar uma seta saindo deste bloco: ${handle.label}`}
         />
       ))}
       {HANDLE_POSITIONS.map((handle) => (
@@ -201,8 +218,8 @@ function FluxoNodeComponent({ id, data, selected }: NodeProps) {
           isConnectableStart={false}
           isConnectableEnd
           className="!h-2 !w-2 !border-0 !bg-transparent"
-          style={{ zIndex: 1 }}
-          title="Solte aqui para conectar uma seta neste bloco"
+          style={{ ...handle.style, zIndex: 1 }}
+          title={`Solte aqui para conectar uma seta neste bloco: ${handle.label}`}
         />
       ))}
     </div>

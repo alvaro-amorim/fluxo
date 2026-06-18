@@ -12,6 +12,22 @@ import {
 import { nowIso } from "./defaults";
 import { resolveSerializedEdgeHandles } from "./edgeRouting";
 
+const VALID_HANDLE_POSITIONS = new Set<string>([
+  "top-left",
+  "top",
+  "top-right",
+  "right-top",
+  "right",
+  "right-bottom",
+  "bottom-right",
+  "bottom",
+  "bottom-left",
+  "left-bottom",
+  "left",
+  "left-top",
+  "auto",
+]);
+
 export function fluxoNodeToReactFlowNode(node: FluxoNodeSerialized): Node {
   const data: FluxoNodeData = {
     shape: node.shape,
@@ -149,7 +165,7 @@ export function reactFlowToFlowProject(
 }
 
 function normalizeHandle(value: unknown): FlowHandlePosition {
-  return value === "top" || value === "right" || value === "bottom" || value === "left"
-    ? value
+  return typeof value === "string" && VALID_HANDLE_POSITIONS.has(value)
+    ? (value as FlowHandlePosition)
     : "auto";
 }

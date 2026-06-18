@@ -10,6 +10,7 @@ import { DEFAULT_NODE_SIZE } from "./defaults";
 
 type NodeLike = Pick<FluxoNodeSerialized, "id" | "position" | "size">;
 type PhysicalHandle = Exclude<FlowHandlePosition, "auto">;
+type HandleSide = "top" | "right" | "bottom" | "left";
 export type ManualRouteAxis = "x" | "y";
 
 export type ManualRoutePoint = { x: number; y: number };
@@ -32,16 +33,27 @@ type Rect = {
 type HandleDescriptor = {
   id: PhysicalHandle;
   normal: Point;
+  side: HandleSide;
 };
 
 const HANDLES: HandleDescriptor[] = [
-  { id: "top", normal: { x: 0, y: -1 } },
-  { id: "right", normal: { x: 1, y: 0 } },
-  { id: "bottom", normal: { x: 0, y: 1 } },
-  { id: "left", normal: { x: -1, y: 0 } },
+  { id: "top-left", normal: { x: 0, y: -1 }, side: "top" },
+  { id: "top", normal: { x: 0, y: -1 }, side: "top" },
+  { id: "top-right", normal: { x: 0, y: -1 }, side: "top" },
+  { id: "right-top", normal: { x: 1, y: 0 }, side: "right" },
+  { id: "right", normal: { x: 1, y: 0 }, side: "right" },
+  { id: "right-bottom", normal: { x: 1, y: 0 }, side: "right" },
+  { id: "bottom-right", normal: { x: 0, y: 1 }, side: "bottom" },
+  { id: "bottom", normal: { x: 0, y: 1 }, side: "bottom" },
+  { id: "bottom-left", normal: { x: 0, y: 1 }, side: "bottom" },
+  { id: "left-bottom", normal: { x: -1, y: 0 }, side: "left" },
+  { id: "left", normal: { x: -1, y: 0 }, side: "left" },
+  { id: "left-top", normal: { x: -1, y: 0 }, side: "left" },
 ];
 
-const OPPOSITE_HANDLE: Record<PhysicalHandle, PhysicalHandle> = {
+const PHYSICAL_HANDLE_IDS = new Set<string>(HANDLES.map((handle) => handle.id));
+
+const OPPOSITE_SIDE: Record<HandleSide, HandleSide> = {
   top: "bottom",
   right: "left",
   bottom: "top",
@@ -282,22 +294,22 @@ function scoreHandlePair(
   score += alignmentPenalty(sourceAlignment);
   score += alignmentPenalty(targetAlignment);
 
-  if (targetDescriptor.id === OPPOSITE_HANDLE[sourceDescriptor.id]) {
+  if (targetDescriptor.side === OPPOSITE_SIDE[sourceDescriptor.side]) {
     score -= 120;
   }
 
-  if (sourceDescriptor.id === targetDescriptor.id) {
+  if (sourceDescriptor.side === targetDescriptor.side) {
     score += 140;
   }
 
   if (hasHorizontalCorridor(source, target)) {
-    score += sourceDescriptor.id === "right" || sourceDescriptor.id === "left" ? -90 : 60;
-    score += targetDescriptor.id === "right" || targetDescriptor.id === "left" ? -90 : 60;
+    score += sourceDescriptor.side === "right" || sourceDescriptor.side === "left" ? -90 : 60;
+    score += targetDescriptor.side === "right" || targetDescriptor.side === "left" ? -90 : 60;
   }
 
   if (hasVerticalCorridor(source, target)) {
-    score += sourceDescriptor.id === "top" || sourceDescriptor.id === "bottom" ? -90 : 60;
-    score += targetDescriptor.id === "top" || targetDescriptor.id === "bottom" ? -90 : 60;
+    score += sourceDescriptor.side === "top" || sourceDescriptor.side === "bottom" ? -90 : 60;
+    score += targetDescriptor.side === "top" || targetDescriptor.side === "bottom" ? -90 : 60;
   }
 
   if (isHandlePointInsideOppositeRect(sourcePoint, target)) score += 180;
@@ -353,10 +365,32 @@ function createRect(id: string, x: number, y: number, width: number, height: num
 }
 
 function getHandlePoint(rect: Rect, handle: PhysicalHandle): Point {
-  if (handle === "top") return { x: rect.centerX, y: rect.top };
-  if (handle === "right") return { x: rect.right, y: rect.centerY };
-  if (handle === "bottom") return { x: rect.centerX, y: rect.bottom };
-  return { x: rect.left, y: rect.centerY };
+  switch (handle) {
+    case "top-left":
+      return { x: rect.left + rect.width * 0.25, y: rect.top };
+    case "top":
+      return { x: rect.centerX, y: rect.top };
+    case "top-right":
+      return { x: rect.left + rect.width * 0.75, y: rect.top };
+    case "right-top":
+      return { x: rect.right, y: rect.top + rect.height * 0.25 };
+    case "right":
+      return { x: rect.right, y: rect.centerY };
+    case "right-bottom":
+      return { x: rect.right, y: rect.top + rect.height * 0.75 };
+    case "bottom-right":
+      return { x: rect.left + rect.width * 0.75, y: rect.bottom };
+    case "bottom":
+      return { x: rect.centerX, y: rect.bottom };
+    case "bottom-left":
+      return { x: rect.left + rect.width * 0.25, y: rect.bottom };
+    case "left-bottom":
+      return { x: rect.left, y: rect.top + rect.height * 0.75 };
+    case "left":
+      return { x: rect.left, y: rect.centerY };
+    case "left-top":
+      return { x: rect.left, y: rect.top + rect.height * 0.25 };
+  }
 }
 
 function getRectMidpoint(source: Rect, target: Rect): Point {
@@ -416,7 +450,7 @@ function isHandlePointInsideOppositeRect(point: Point, rect: Rect) {
 }
 
 function dot(a: Point, b: Point) {
-  return a.x * b.x + a.y * b.y;
+  return a.x * b.x + b.y * a.y;
 }
 
 function shouldUseSmartHandle(handle: unknown) {
@@ -424,9 +458,8 @@ function shouldUseSmartHandle(handle: unknown) {
 }
 
 function normalizeHandle(value: unknown): FlowHandlePosition {
-  return value === "top" || value === "right" || value === "bottom" || value === "left"
-    ? value
-    : "auto";
+  if (value === "auto") return "auto";
+  return typeof value === "string" && PHYSICAL_HANDLE_IDS.has(value) ? (value as PhysicalHandle) : "auto";
 }
 
 function handleOrFallback(handle: FlowHandlePosition, fallback: PhysicalHandle): PhysicalHandle {

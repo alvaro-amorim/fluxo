@@ -8,6 +8,7 @@ interface SelectionToolbarProps {
   hasEdgeSelection: boolean;
   onEdit?: () => void;
   onDuplicate?: () => void;
+  onInvert?: () => void;
   onAuto: () => void;
   onDeviationX: () => void;
   onDeviationY: () => void;
@@ -19,6 +20,7 @@ export function SelectionToolbar({
   hasEdgeSelection,
   onEdit,
   onDuplicate,
+  onInvert,
   onAuto,
   onDeviationX,
   onDeviationY,
@@ -47,6 +49,12 @@ export function SelectionToolbar({
 
       {hasEdgeSelection ? (
         <>
+          {onInvert && (
+            <ToolbarButton onClick={onInvert} title="Inverter direção da seta">
+              <Route className="h-3.5 w-3.5" />
+              Inverter
+            </ToolbarButton>
+          )}
           <ToolbarButton
             onClick={onAuto}
             title="Recalcular automaticamente a melhor saída e entrada da seta"

@@ -12,7 +12,7 @@ import {
 import { normalizeManualRoutePoints, type ManualRoutePoint } from "@/lib/flow/edgeRouting";
 import type { EdgeLineType, FlowHandlePosition, FluxoEdgeData } from "@/lib/flow/types";
 
-type EdgePath = [path: string, labelX: number, labelY: number];
+type EdgePath = [path: string, labelX: number, labelY: number, offsetX: number, offsetY: number];
 type Point = ManualRoutePoint;
 
 export function FluxoEdge(props: EdgeProps) {
@@ -108,7 +108,7 @@ export function FluxoEdge(props: EdgeProps) {
         </EdgeLabelRenderer>
       ) : null}
 
-      {selected ? (
+      {selected && data && (
         <EdgeLabelRenderer>
           <button
             type="button"
@@ -122,7 +122,7 @@ export function FluxoEdge(props: EdgeProps) {
             Inverter
           </button>
         </EdgeLabelRenderer>
-      ) : null}
+      )}
     </>
   );
 }
@@ -203,7 +203,7 @@ function getManualPath({
     .join(" ");
   const labelPoint = getPathLabelPoint(pathPoints);
 
-  return [path, labelPoint.x, labelPoint.y];
+  return [path, labelPoint.x, labelPoint.y, 0, 0];
 }
 
 function getPathLabelPoint(points: Point[]): Point {

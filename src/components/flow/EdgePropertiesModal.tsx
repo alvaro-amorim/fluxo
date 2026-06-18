@@ -27,11 +27,21 @@ const STROKES: { id: EdgeStrokeType; label: string }[] = [
 
 const EDGE_COLORS = ["#374151", "#111827", "#2563eb", "#16a34a", "#f97316", "#dc2626", "#7c3aed", "#0f766e"];
 
-const HANDLE_OPTIONS: { id: Exclude<FlowHandlePosition, "auto">; label: string }[] = [
-  { id: "top", label: "Topo" },
-  { id: "right", label: "Direita" },
-  { id: "bottom", label: "Baixo" },
-  { id: "left", label: "Esquerda" },
+type ManualHandlePosition = Exclude<FlowHandlePosition, "auto">;
+
+const HANDLE_OPTIONS: { id: ManualHandlePosition; label: string; hint: string }[] = [
+  { id: "top-left", label: "Sup. E", hint: "Topo esquerdo" },
+  { id: "top", label: "Topo", hint: "Topo central" },
+  { id: "top-right", label: "Sup. D", hint: "Topo direito" },
+  { id: "left-top", label: "Esq. S", hint: "Esquerda superior" },
+  { id: "right-top", label: "Dir. S", hint: "Direita superior" },
+  { id: "left", label: "Esq.", hint: "Esquerda central" },
+  { id: "right", label: "Dir.", hint: "Direita central" },
+  { id: "left-bottom", label: "Esq. I", hint: "Esquerda inferior" },
+  { id: "right-bottom", label: "Dir. I", hint: "Direita inferior" },
+  { id: "bottom-left", label: "Inf. E", hint: "Baixo esquerdo" },
+  { id: "bottom", label: "Baixo", hint: "Baixo central" },
+  { id: "bottom-right", label: "Inf. D", hint: "Baixo direito" },
 ];
 
 const PRIORITIES: {
@@ -96,6 +106,8 @@ export function EdgePropertiesModal({
   const useAutoRouting = () => {
     setDraft({
       ...draft,
+      sourceHandle: "auto",
+      targetHandle: "auto",
       routing: {
         ...(draft.routing ?? { points: [], avoidCrossings: true }),
         mode: "auto",
@@ -110,10 +122,12 @@ export function EdgePropertiesModal({
 
   const edgeColor = draft.style?.stroke ?? "#374151";
   const edgeWidth = draft.style?.strokeWidth ?? 2;
+  const sourceHandle = (draft.sourceHandle === "auto" ? "right" : (draft.sourceHandle ?? "right")) as ManualHandlePosition;
+  const targetHandle = (draft.targetHandle === "auto" ? "left" : (draft.targetHandle ?? "left")) as ManualHandlePosition;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl gap-0 overflow-hidden p-0">
+      <DialogContent className="max-w-2xl gap-0 overflow-hidden p-0">
         {/* Header */}
         <DialogHeader className="relative border-b border-border bg-card px-6 pt-6 pb-5">
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand/40 to-transparent" />
@@ -235,9 +249,9 @@ export function EdgePropertiesModal({
                   <MoveHorizontal className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium">Direção da conexão</div>
+                  <div className="text-sm font-medium">Pontos de conexão</div>
                   <div className="text-xs text-muted-foreground">
-                    Escolha de qual lado a seta sai e em qual lado ela entra.
+                    Escolha o ponto exato de saída e entrada da seta.
                   </div>
                 </div>
               </div>
@@ -246,34 +260,18 @@ export function EdgePropertiesModal({
               </Button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Row label="Sai do bloco origem">
-                <SegmentedGroup
-                  options={HANDLE_OPTIONS}
-                  value={
-                    (draft.sourceHandle === "auto"
-                      ? "right"
-                      : (draft.sourceHandle ?? "right")) as Exclude<FlowHandlePosition, "auto">
-                  }
-                  onChange={(v) => setHandle("sourceHandle", v as FlowHandlePosition)}
-                />
+            <div className="grid gap-3 md:grid-cols-2">
+              <Row label="Sai do bloco origem" hint={draft.sourceHandle === "auto" ? "automático" : undefined}>
+                <HandlePicker value={sourceHandle} onChange={(v) => setHandle("sourceHandle", v)} />
               </Row>
-              <Row label="Entra no bloco destino">
-                <SegmentedGroup
-                  options={HANDLE_OPTIONS}
-                  value={
-                    (draft.targetHandle === "auto"
-                      ? "left"
-                      : (draft.targetHandle ?? "left")) as Exclude<FlowHandlePosition, "auto">
-                  }
-                  onChange={(v) => setHandle("targetHandle", v as FlowHandlePosition)}
-                />
+              <Row label="Entra no bloco destino" hint={draft.targetHandle === "auto" ? "automático" : undefined}>
+                <HandlePicker value={targetHandle} onChange={(v) => setHandle("targetHandle", v)} />
               </Row>
             </div>
 
             <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-              Manual trava os lados escolhidos. Automático preserva o desenho atual e permite que a
-              lógica inteligente recalcule os pontos nas próximas rotinas de organização.
+              Manual trava os pontos escolhidos. Automático libera origem e destino para que o
+              roteamento inteligente escolha a melhor porta.
             </p>
           </div>
 
@@ -430,6 +428,37 @@ function SegmentedGroup<T extends string>({
           >
             {o.icon}
             <span>{o.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function HandlePicker({
+  value,
+  onChange,
+}: {
+  value: ManualHandlePosition;
+  onChange: (value: ManualHandlePosition) => void;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-1.5 rounded-lg border border-border bg-muted p-1.5">
+      {HANDLE_OPTIONS.map((option) => {
+        const active = value === option.id;
+        return (
+          <button
+            key={option.id}
+            type="button"
+            onClick={() => onChange(option.id)}
+            title={`${option.hint} (${option.id})`}
+            className={`rounded-md border px-1.5 py-1.5 text-[10px] transition ${
+              active
+                ? "border-foreground bg-card font-medium text-foreground shadow-sm"
+                : "border-transparent text-muted-foreground hover:border-border hover:bg-card/70 hover:text-foreground"
+            }`}
+          >
+            {option.label}
           </button>
         );
       })}

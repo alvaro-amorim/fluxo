@@ -36,6 +36,16 @@ type HandleDescriptor = {
   side: HandleSide;
 };
 
+type RoutableEdge = Parameters<typeof resolveReactFlowEdgeHandles>[0];
+type ResolvedRoute = {
+  id?: string;
+  source: string;
+  target: string;
+  sourceHandle: PhysicalHandle;
+  targetHandle: PhysicalHandle;
+  polyline: Point[];
+};
+
 const HANDLES: HandleDescriptor[] = [
   { id: "top-left", normal: { x: 0, y: -1 }, side: "top" },
   { id: "top", normal: { x: 0, y: -1 }, side: "top" },
@@ -51,6 +61,9 @@ const HANDLES: HandleDescriptor[] = [
   { id: "left-top", normal: { x: -1, y: 0 }, side: "left" },
 ];
 
+const HANDLE_BY_ID = new Map<PhysicalHandle, HandleDescriptor>(
+  HANDLES.map((handle) => [handle.id, handle]),
+);
 const PHYSICAL_HANDLE_IDS = new Set<string>(HANDLES.map((handle) => handle.id));
 
 const OPPOSITE_SIDE: Record<HandleSide, HandleSide> = {
@@ -111,6 +124,7 @@ export function resolveSerializedEdgeHandles(
 
 export function resolveReactFlowEdgeHandles(
   edge: {
+    id?: string;
     source: string;
     target: string;
     sourceHandle?: string | null;
@@ -148,13 +162,55 @@ export function resolveReactFlowEdgeHandles(
   };
 }
 
-export function applySmartHandlesToReactFlowEdges(
-  nodes: Node[],
-  edges: Parameters<typeof resolveReactFlowEdgeHandles>[0][],
-) {
+export function applySmartHandlesToReactFlowEdges(nodes: Node[], edges: RoutableEdge[]) {
+  const rectByNodeId = new Map(nodes.map((node) => [node.id, reactFlowNodeToRect(node)]));
+  const resolvedRoutes: ResolvedRoute[] = [];
+  const portUsage = new Map<string, number>();
+  const sideUsage = new Map<string, number>();
+
   return edges.map((edge) => {
     const data = (edge.data as FluxoEdgeData | undefined) ?? undefined;
-    const handles = resolveReactFlowEdgeHandles(edge, nodes);
+    const source = rectByNodeId.get(edge.source);
+    const target = rectByNodeId.get(edge.target);
+
+    if (!source || !target) return edge;
+
+    const currentSourceHandle = normalizeHandle(edge.sourceHandle ?? data?.sourceHandle);
+    const currentTargetHandle = normalizeHandle(edge.targetHandle ?? data?.targetHandle);
+    const sourceIsAuto = shouldUseSmartHandle(currentSourceHandle);
+    const targetIsAuto = shouldUseSmartHandle(currentTargetHandle);
+    const routeIsAuto = data?.routing?.mode !== "manual";
+
+    const handles =
+      routeIsAuto && (sourceIsAuto || targetIsAuto)
+        ? getSmartHandlesForEdge({
+            edge,
+            source,
+            target,
+            currentSourceHandle,
+            currentTargetHandle,
+            resolvedRoutes,
+            rects: [...rectByNodeId.values()],
+            portUsage,
+            sideUsage,
+          })
+        : {
+            sourceHandle: handleOrFallback(currentSourceHandle, getFallbackHandles(source, target).sourceHandle),
+            targetHandle: handleOrFallback(currentTargetHandle, getFallbackHandles(source, target).targetHandle),
+          };
+
+    const polyline = getOrthogonalPolyline(source, target, handles.sourceHandle, handles.targetHandle);
+    const route: ResolvedRoute = {
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      sourceHandle: handles.sourceHandle,
+      targetHandle: handles.targetHandle,
+      polyline,
+    };
+
+    resolvedRoutes.push(route);
+    registerRouteUsage(route, portUsage, sideUsage);
 
     return {
       ...edge,
@@ -273,6 +329,62 @@ export function nudgeManualRoutePoints(
   }));
 }
 
+function getSmartHandlesForEdge({
+  edge,
+  source,
+  target,
+  currentSourceHandle,
+  currentTargetHandle,
+  resolvedRoutes,
+  rects,
+  portUsage,
+  sideUsage,
+}: {
+  edge: RoutableEdge;
+  source: Rect;
+  target: Rect;
+  currentSourceHandle: FlowHandlePosition;
+  currentTargetHandle: FlowHandlePosition;
+  resolvedRoutes: ResolvedRoute[];
+  rects: Rect[];
+  portUsage: Map<string, number>;
+  sideUsage: Map<string, number>;
+}): SmartHandles {
+  let best: { handles: SmartHandles; score: number } | null = null;
+  const sourceOptions = shouldUseSmartHandle(currentSourceHandle)
+    ? HANDLES
+    : [HANDLE_BY_ID.get(currentSourceHandle as PhysicalHandle)].filter(
+        (handle): handle is HandleDescriptor => Boolean(handle),
+      );
+  const targetOptions = shouldUseSmartHandle(currentTargetHandle)
+    ? HANDLES
+    : [HANDLE_BY_ID.get(currentTargetHandle as PhysicalHandle)].filter(
+        (handle): handle is HandleDescriptor => Boolean(handle),
+      );
+
+  for (const sourceDescriptor of sourceOptions) {
+    for (const targetDescriptor of targetOptions) {
+      const handles: SmartHandles = {
+        sourceHandle: sourceDescriptor.id,
+        targetHandle: targetDescriptor.id,
+      };
+      const polyline = getOrthogonalPolyline(source, target, handles.sourceHandle, handles.targetHandle);
+      const score =
+        scoreHandlePair(source, target, sourceDescriptor, targetDescriptor) +
+        scoreUsage(edge, sourceDescriptor, targetDescriptor, portUsage, sideUsage) +
+        scoreParallelRoutes(edge, handles, resolvedRoutes) +
+        scorePolylineAgainstRoutes(polyline, resolvedRoutes) +
+        scorePolylineAgainstNodes(polyline, rects, source.id, target.id);
+
+      if (!best || score < best.score) {
+        best = { handles, score };
+      }
+    }
+  }
+
+  return best?.handles ?? getFallbackHandles(source, target);
+}
+
 function scoreHandlePair(
   source: Rect,
   target: Rect,
@@ -316,6 +428,174 @@ function scoreHandlePair(
   if (isHandlePointInsideOppositeRect(targetPoint, source)) score += 180;
 
   return score;
+}
+
+function scoreUsage(
+  edge: RoutableEdge,
+  sourceDescriptor: HandleDescriptor,
+  targetDescriptor: HandleDescriptor,
+  portUsage: Map<string, number>,
+  sideUsage: Map<string, number>,
+) {
+  const sourcePortKey = getPortKey(edge.source, "source", sourceDescriptor.id);
+  const targetPortKey = getPortKey(edge.target, "target", targetDescriptor.id);
+  const sourceSideKey = getSideKey(edge.source, "source", sourceDescriptor.side);
+  const targetSideKey = getSideKey(edge.target, "target", targetDescriptor.side);
+
+  return (
+    (portUsage.get(sourcePortKey) ?? 0) * 260 +
+    (portUsage.get(targetPortKey) ?? 0) * 260 +
+    (sideUsage.get(sourceSideKey) ?? 0) * 42 +
+    (sideUsage.get(targetSideKey) ?? 0) * 42
+  );
+}
+
+function scoreParallelRoutes(
+  edge: RoutableEdge,
+  handles: SmartHandles,
+  resolvedRoutes: ResolvedRoute[],
+) {
+  let score = 0;
+
+  for (const route of resolvedRoutes) {
+    const sameDirection = route.source === edge.source && route.target === edge.target;
+    const oppositeDirection = route.source === edge.target && route.target === edge.source;
+    const samePair = sameDirection || oppositeDirection;
+
+    if (!samePair) continue;
+
+    if (sameDirection) {
+      if (route.sourceHandle === handles.sourceHandle) score += 180;
+      if (route.targetHandle === handles.targetHandle) score += 180;
+      if (route.sourceHandle === handles.sourceHandle && route.targetHandle === handles.targetHandle) {
+        score += 320;
+      }
+    }
+
+    if (oppositeDirection) {
+      if (route.sourceHandle === handles.targetHandle) score += 140;
+      if (route.targetHandle === handles.sourceHandle) score += 140;
+    }
+  }
+
+  return score;
+}
+
+function scorePolylineAgainstRoutes(polyline: Point[], resolvedRoutes: ResolvedRoute[]) {
+  let score = 0;
+
+  for (const route of resolvedRoutes) {
+    const overlaps = countOverlappingSegments(polyline, route.polyline);
+    const intersections = countPolylineIntersections(polyline, route.polyline);
+    score += overlaps * 420;
+    score += intersections * 160;
+  }
+
+  return score;
+}
+
+function scorePolylineAgainstNodes(polyline: Point[], rects: Rect[], sourceId: string, targetId: string) {
+  let score = 0;
+
+  for (const rect of rects) {
+    if (rect.id === sourceId || rect.id === targetId) continue;
+    if (polylineIntersectsRect(polyline, rect)) score += 220;
+  }
+
+  return score;
+}
+
+function registerRouteUsage(
+  route: ResolvedRoute,
+  portUsage: Map<string, number>,
+  sideUsage: Map<string, number>,
+) {
+  const sourceSide = HANDLE_BY_ID.get(route.sourceHandle)?.side;
+  const targetSide = HANDLE_BY_ID.get(route.targetHandle)?.side;
+
+  increment(portUsage, getPortKey(route.source, "source", route.sourceHandle));
+  increment(portUsage, getPortKey(route.target, "target", route.targetHandle));
+
+  if (sourceSide) increment(sideUsage, getSideKey(route.source, "source", sourceSide));
+  if (targetSide) increment(sideUsage, getSideKey(route.target, "target", targetSide));
+}
+
+function getOrthogonalPolyline(
+  source: Rect,
+  target: Rect,
+  sourceHandle: PhysicalHandle,
+  targetHandle: PhysicalHandle,
+): Point[] {
+  const start = getHandlePoint(source, sourceHandle);
+  const end = getHandlePoint(target, targetHandle);
+  const sourceSide = HANDLE_BY_ID.get(sourceHandle)?.side ?? "right";
+  const targetSide = HANDLE_BY_ID.get(targetHandle)?.side ?? "left";
+
+  if (Math.abs(start.x - end.x) < 1 || Math.abs(start.y - end.y) < 1) return [start, end];
+
+  if (isHorizontalSide(sourceSide) && isHorizontalSide(targetSide)) {
+    const corridorX = getHorizontalManualCorridorX(source, target, 96, 56);
+    return normalizePolyline([
+      start,
+      { x: corridorX, y: start.y },
+      { x: corridorX, y: end.y },
+      end,
+    ]);
+  }
+
+  if (isVerticalSide(sourceSide) && isVerticalSide(targetSide)) {
+    const corridorY = getVerticalManualCorridorY(source, target, 96, 56);
+    return normalizePolyline([
+      start,
+      { x: start.x, y: corridorY },
+      { x: end.x, y: corridorY },
+      end,
+    ]);
+  }
+
+  const horizontalFirst = isHorizontalSide(sourceSide) || isVerticalSide(targetSide);
+  return normalizePolyline(
+    horizontalFirst
+      ? [start, { x: end.x, y: start.y }, end]
+      : [start, { x: start.x, y: end.y }, end],
+  );
+}
+
+function normalizePolyline(points: Point[]) {
+  return points.filter((point, index) => {
+    const previous = points[index - 1];
+    return !previous || Math.abs(previous.x - point.x) > 0.5 || Math.abs(previous.y - point.y) > 0.5;
+  });
+}
+
+function countPolylineIntersections(a: Point[], b: Point[]) {
+  let count = 0;
+
+  for (const segmentA of getSegments(a)) {
+    for (const segmentB of getSegments(b)) {
+      if (segmentsShareEndpoint(segmentA, segmentB)) continue;
+      if (segmentsIntersect(segmentA, segmentB)) count += 1;
+    }
+  }
+
+  return count;
+}
+
+function countOverlappingSegments(a: Point[], b: Point[]) {
+  let count = 0;
+
+  for (const segmentA of getSegments(a)) {
+    for (const segmentB of getSegments(b)) {
+      if (segmentsOverlap(segmentA, segmentB)) count += 1;
+    }
+  }
+
+  return count;
+}
+
+function polylineIntersectsRect(polyline: Point[], rect: Rect) {
+  const padded = padRect(rect, 16);
+  return getSegments(polyline).some((segment) => segmentIntersectsRect(segment, padded));
 }
 
 function getFallbackHandles(source: Rect, target: Rect): SmartHandles {
@@ -449,6 +729,14 @@ function isHandlePointInsideOppositeRect(point: Point, rect: Rect) {
   return point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
 }
 
+function isHorizontalSide(side: HandleSide) {
+  return side === "left" || side === "right";
+}
+
+function isVerticalSide(side: HandleSide) {
+  return side === "top" || side === "bottom";
+}
+
 function dot(a: Point, b: Point) {
   return a.x * b.x + b.y * a.y;
 }
@@ -464,4 +752,121 @@ function normalizeHandle(value: unknown): FlowHandlePosition {
 
 function handleOrFallback(handle: FlowHandlePosition, fallback: PhysicalHandle): PhysicalHandle {
   return handle === "auto" ? fallback : handle;
+}
+
+function getPortKey(nodeId: string, direction: "source" | "target", handle: PhysicalHandle) {
+  return `${direction}:${nodeId}:${handle}`;
+}
+
+function getSideKey(nodeId: string, direction: "source" | "target", side: HandleSide) {
+  return `${direction}:${nodeId}:${side}`;
+}
+
+function increment(map: Map<string, number>, key: string) {
+  map.set(key, (map.get(key) ?? 0) + 1);
+}
+
+type Segment = { a: Point; b: Point };
+
+function getSegments(points: Point[]): Segment[] {
+  const segments: Segment[] = [];
+  for (let index = 1; index < points.length; index += 1) {
+    segments.push({ a: points[index - 1]!, b: points[index]! });
+  }
+  return segments;
+}
+
+function segmentsIntersect(first: Segment, second: Segment) {
+  const o1 = orientation(first.a, first.b, second.a);
+  const o2 = orientation(first.a, first.b, second.b);
+  const o3 = orientation(second.a, second.b, first.a);
+  const o4 = orientation(second.a, second.b, first.b);
+
+  if (o1 !== o2 && o3 !== o4) return true;
+  if (o1 === 0 && onSegment(first.a, second.a, first.b)) return true;
+  if (o2 === 0 && onSegment(first.a, second.b, first.b)) return true;
+  if (o3 === 0 && onSegment(second.a, first.a, second.b)) return true;
+  if (o4 === 0 && onSegment(second.a, first.b, second.b)) return true;
+  return false;
+}
+
+function segmentsOverlap(first: Segment, second: Segment) {
+  if (isVerticalSegment(first) && isVerticalSegment(second)) {
+    return Math.abs(first.a.x - second.a.x) < 2 && rangesOverlap(first.a.y, first.b.y, second.a.y, second.b.y);
+  }
+
+  if (isHorizontalSegment(first) && isHorizontalSegment(second)) {
+    return Math.abs(first.a.y - second.a.y) < 2 && rangesOverlap(first.a.x, first.b.x, second.a.x, second.b.x);
+  }
+
+  return false;
+}
+
+function segmentsShareEndpoint(first: Segment, second: Segment) {
+  return (
+    pointsAreClose(first.a, second.a) ||
+    pointsAreClose(first.a, second.b) ||
+    pointsAreClose(first.b, second.a) ||
+    pointsAreClose(first.b, second.b)
+  );
+}
+
+function segmentIntersectsRect(segment: Segment, rect: Rect) {
+  if (pointInsideRect(segment.a, rect) || pointInsideRect(segment.b, rect)) return true;
+
+  const top: Segment = { a: { x: rect.left, y: rect.top }, b: { x: rect.right, y: rect.top } };
+  const right: Segment = { a: { x: rect.right, y: rect.top }, b: { x: rect.right, y: rect.bottom } };
+  const bottom: Segment = { a: { x: rect.right, y: rect.bottom }, b: { x: rect.left, y: rect.bottom } };
+  const left: Segment = { a: { x: rect.left, y: rect.bottom }, b: { x: rect.left, y: rect.top } };
+
+  return [top, right, bottom, left].some((side) => segmentsIntersect(segment, side));
+}
+
+function orientation(a: Point, b: Point, c: Point) {
+  const value = (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y);
+  if (Math.abs(value) < 0.001) return 0;
+  return value > 0 ? 1 : 2;
+}
+
+function onSegment(a: Point, b: Point, c: Point) {
+  return (
+    b.x <= Math.max(a.x, c.x) + 0.001 &&
+    b.x + 0.001 >= Math.min(a.x, c.x) &&
+    b.y <= Math.max(a.y, c.y) + 0.001 &&
+    b.y + 0.001 >= Math.min(a.y, c.y)
+  );
+}
+
+function rangesOverlap(a1: number, a2: number, b1: number, b2: number) {
+  const minA = Math.min(a1, a2);
+  const maxA = Math.max(a1, a2);
+  const minB = Math.min(b1, b2);
+  const maxB = Math.max(b1, b2);
+  return Math.max(minA, minB) <= Math.min(maxA, maxB);
+}
+
+function isVerticalSegment(segment: Segment) {
+  return Math.abs(segment.a.x - segment.b.x) < 1;
+}
+
+function isHorizontalSegment(segment: Segment) {
+  return Math.abs(segment.a.y - segment.b.y) < 1;
+}
+
+function pointsAreClose(a: Point, b: Point) {
+  return Math.hypot(a.x - b.x, a.y - b.y) < 2;
+}
+
+function pointInsideRect(point: Point, rect: Rect) {
+  return point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
+}
+
+function padRect(rect: Rect, padding: number): Rect {
+  return createRect(
+    rect.id,
+    rect.x - padding,
+    rect.y - padding,
+    rect.width + padding * 2,
+    rect.height + padding * 2,
+  );
 }

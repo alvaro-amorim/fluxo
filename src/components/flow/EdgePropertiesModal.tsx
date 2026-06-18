@@ -10,6 +10,7 @@ import type {
   FluxoEdgeData,
   EdgeLineType,
   EdgeStrokeType,
+  FlowEdgeStyle,
   FlowHandlePosition,
 } from "@/lib/flow/types";
 
@@ -23,6 +24,8 @@ const STROKES: { id: EdgeStrokeType; label: string }[] = [
   { id: "solid", label: "Contínua" },
   { id: "dashed", label: "Pontilhada" },
 ];
+
+const EDGE_COLORS = ["#374151", "#111827", "#2563eb", "#16a34a", "#f97316", "#dc2626", "#7c3aed", "#0f766e"];
 
 const HANDLE_OPTIONS: { id: Exclude<FlowHandlePosition, "auto">; label: string }[] = [
   { id: "top", label: "Topo" },
@@ -61,6 +64,23 @@ export function EdgePropertiesModal({
   const update = (patch: Partial<FluxoEdgeData>) => setDraft({ ...draft, ...patch });
   const sem = (patch: Partial<FluxoEdgeData["semantic"]>) =>
     setDraft({ ...draft, semantic: { ...draft.semantic, ...patch } });
+  const updateStyle = (patch: Partial<FlowEdgeStyle>) =>
+    setDraft({ ...draft, style: normalizeEdgeStyle(draft, patch) });
+  const updateStroke = (stroke: EdgeStrokeType) =>
+    setDraft({
+      ...draft,
+      stroke,
+      style: normalizeEdgeStyle(
+        { ...draft, stroke },
+        { strokeDasharray: stroke === "dashed" ? "5 4" : null },
+      ),
+    });
+  const updateArrow = (hasArrow: boolean) =>
+    setDraft({
+      ...draft,
+      hasArrow,
+      style: normalizeEdgeStyle({ ...draft, hasArrow }, { markerEnd: hasArrow ? "arrow" : "none" }),
+    });
 
   const setHandle = (field: "sourceHandle" | "targetHandle", value: FlowHandlePosition) => {
     setDraft({
@@ -84,9 +104,12 @@ export function EdgePropertiesModal({
   };
 
   const submit = () => {
-    onSave(draft);
+    onSave({ ...draft, style: normalizeEdgeStyle(draft) });
     onOpenChange(false);
   };
+
+  const edgeColor = draft.style?.stroke ?? "#374151";
+  const edgeWidth = draft.style?.strokeWidth ?? 2;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -100,7 +123,12 @@ export function EdgePropertiesModal({
           <DialogTitle className="font-display text-2xl italic tracking-tight">
             {draft.label || "seta sem rótulo"}
           </DialogTitle>
-          <EdgePreview lineType={draft.lineType} stroke={draft.stroke} hasArrow={draft.hasArrow} />
+          <EdgePreview
+            lineType={draft.lineType}
+            stroke={draft.stroke}
+            hasArrow={draft.hasArrow}
+            edgeStyle={draft.style}
+          />
         </DialogHeader>
 
         {/* Body */}
@@ -144,7 +172,58 @@ export function EdgePropertiesModal({
                   icon: <LineGlyph lineType="straight" stroke={s.id} />,
                 }))}
                 value={draft.stroke}
-                onChange={(v) => update({ stroke: v as EdgeStrokeType })}
+                onChange={(v) => updateStroke(v as EdgeStrokeType)}
+              />
+            </Row>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-card p-4">
+            <Row label="Cor da seta" hint="Linha e ponta">
+              <div className="flex items-center overflow-hidden rounded-md border border-border bg-background">
+                <label className="relative h-9 w-10 cursor-pointer border-r border-border">
+                  <span className="absolute inset-1 rounded" style={{ background: edgeColor }} />
+                  <input
+                    type="color"
+                    value={edgeColor}
+                    onChange={(e) => updateStyle({ stroke: e.target.value })}
+                    className="absolute inset-0 cursor-pointer opacity-0"
+                  />
+                </label>
+                <Input
+                  value={edgeColor}
+                  onChange={(e) => updateStyle({ stroke: e.target.value })}
+                  className="h-9 border-0 font-mono text-xs focus-visible:ring-0"
+                />
+              </div>
+              <div className="mt-2 flex gap-1.5">
+                {EDGE_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => updateStyle({ stroke: color })}
+                    className={`h-6 flex-1 rounded-md border transition ${
+                      edgeColor === color
+                        ? "border-foreground ring-2 ring-foreground/20"
+                        : "border-border hover:border-foreground/40"
+                    }`}
+                    style={{ background: color }}
+                    title={color}
+                  />
+                ))}
+              </div>
+            </Row>
+
+            <Row label="Espessura" hint="1 a 10 px">
+              <Input
+                type="number"
+                min={1}
+                max={10}
+                step={1}
+                value={edgeWidth}
+                onChange={(e) =>
+                  updateStyle({
+                    strokeWidth: Math.min(10, Math.max(1, Number(e.target.value) || 1)),
+                  })
+                }
               />
             </Row>
           </div>
@@ -208,7 +287,7 @@ export function EdgePropertiesModal({
                 <div className="text-xs text-muted-foreground">Conexão direcional ou simples</div>
               </div>
             </div>
-            <Switch checked={draft.hasArrow} onCheckedChange={(v) => update({ hasArrow: v })} />
+            <Switch checked={draft.hasArrow} onCheckedChange={updateArrow} />
           </div>
 
           <Row label="Condição" hint="Quando este caminho é percorrido">
@@ -280,6 +359,25 @@ export function EdgePropertiesModal({
       </DialogContent>
     </Dialog>
   );
+}
+
+function normalizeEdgeStyle(draft: FluxoEdgeData, patch: Partial<FlowEdgeStyle> = {}): FlowEdgeStyle {
+  const stroke = patch.stroke ?? draft.style?.stroke ?? "#374151";
+  const strokeWidth = patch.strokeWidth ?? draft.style?.strokeWidth ?? 2;
+  const strokeDasharray =
+    patch.strokeDasharray !== undefined
+      ? patch.strokeDasharray
+      : draft.stroke === "dashed"
+        ? "5 4"
+        : null;
+  const markerEnd = patch.markerEnd ?? (draft.hasArrow ? "arrow" : "none");
+
+  return {
+    stroke,
+    strokeWidth,
+    strokeDasharray,
+    markerEnd,
+  };
 }
 
 function Row({
@@ -380,19 +478,24 @@ function EdgePreview({
   lineType,
   stroke,
   hasArrow,
+  edgeStyle,
 }: {
   lineType: EdgeLineType;
   stroke: EdgeStrokeType;
   hasArrow: boolean;
+  edgeStyle?: FlowEdgeStyle;
 }) {
   const dash = stroke === "dashed" ? "6 4" : undefined;
+  const color = edgeStyle?.stroke ?? "currentColor";
+  const width = edgeStyle?.strokeWidth ?? 1.6;
+
   return (
     <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-muted/40 p-3">
       <span className="h-6 w-10 rounded-md border border-border bg-card" />
       <svg viewBox="0 0 80 16" className="h-4 flex-1 text-foreground/70">
         <defs>
           <marker id="modal-arr" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
-            <path d="M0,0 L5,2.5 L0,5 z" fill="currentColor" />
+            <path d="M0,0 L5,2.5 L0,5 z" fill={color} />
           </marker>
         </defs>
         {lineType === "straight" && (
@@ -401,8 +504,8 @@ function EdgePreview({
             y1="8"
             x2="78"
             y2="8"
-            stroke="currentColor"
-            strokeWidth="1.6"
+            stroke={color}
+            strokeWidth={width}
             strokeDasharray={dash}
             markerEnd={hasArrow ? "url(#modal-arr)" : undefined}
           />
@@ -411,8 +514,8 @@ function EdgePreview({
           <path
             d="M2 14 L2 8 L78 8 L78 2"
             fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
+            stroke={color}
+            strokeWidth={width}
             strokeDasharray={dash}
             markerEnd={hasArrow ? "url(#modal-arr)" : undefined}
           />
@@ -421,8 +524,8 @@ function EdgePreview({
           <path
             d="M2 14 C 20 14, 60 2, 78 2"
             fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
+            stroke={color}
+            strokeWidth={width}
             strokeDasharray={dash}
             markerEnd={hasArrow ? "url(#modal-arr)" : undefined}
           />

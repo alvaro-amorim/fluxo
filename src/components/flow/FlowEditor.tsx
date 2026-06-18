@@ -36,6 +36,7 @@ import {
   type FluxoEdgeData,
   type FluxoEdgeSerialized,
   type FluxoNodeData,
+  type ShapeType,
 } from "@/lib/flow/types";
 import {
   flowProjectToReactFlow,
@@ -845,6 +846,43 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
   const finishInlineRename = useCallback(() => {
     inlineRenameNodeIdRef.current = null;
   }, []);
+  const updateSelectedNodeShape = useCallback(
+    (shape: ShapeType) => {
+      const nodeId = selectedNode?.id;
+      if (!nodeId) return;
+
+      snapshot();
+
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id !== nodeId) return node;
+
+          const data = node.data as FluxoNodeData;
+          return {
+            ...node,
+            data: {
+              ...data,
+              shape,
+            },
+          };
+        }),
+      );
+
+      setSelectedNode((node) => {
+        if (!node || node.id !== nodeId) return node;
+
+        const data = node.data as FluxoNodeData;
+        return {
+          ...node,
+          data: {
+            ...data,
+            shape,
+          },
+        };
+      });
+    },
+    [selectedNode?.id, snapshot],
+  );
 
   const onDeleteNode = useCallback(() => {
     if (!selectedNode) return;
@@ -1105,6 +1143,14 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
             activeSelectedNode && !selectedEdge ? updateSelectedNodeTitle : undefined
           }
           onNodeTitleCommit={finishInlineRename}
+          nodeShape={
+            activeSelectedNode && !selectedEdge
+              ? ((activeSelectedNode.data as FluxoNodeData).shape ?? "rounded-rectangle")
+              : undefined
+          }
+          onNodeShapeChange={
+            activeSelectedNode && !selectedEdge ? updateSelectedNodeShape : undefined
+          }
           onEdit={selectedEdge ? () => setEdgeModalOpen(true) : undefined}
           onDuplicate={activeSelectedNode && !selectedEdge ? duplicateSelection : undefined}
           onInvert={selectedEdge ? invertSelectedEdge : undefined}

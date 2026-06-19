@@ -1,6 +1,15 @@
-import { memo } from "react";
-import { Handle, NodeResizer, Position, useReactFlow, type NodeProps } from "@xyflow/react";
-import type { FlowHandlePosition, FluxoNodeData, ShapeType } from "@/lib/flow/types";
+import { memo, useEffect } from "react";
+import {
+  Handle,
+  NodeResizer,
+  Position,
+  useReactFlow,
+  useUpdateNodeInternals,
+  type NodeProps,
+} from "@xyflow/react";
+import { getShapeConnectionPoint, getShapeContentFrame } from "@/lib/flow/shapeGeometry";
+import type { FlowHandlePosition, FluxoNodeData } from "@/lib/flow/types";
+import { ShapeRenderer } from "./ShapeRenderer";
 
 type PhysicalHandlePosition = Exclude<FlowHandlePosition, "auto">;
 
@@ -8,49 +17,21 @@ type RenderHandle = {
   id: PhysicalHandlePosition;
   label: string;
   position: Position;
-  style: React.CSSProperties;
 };
 
-function shapeStyles(shape: ShapeType, w: number, h: number): React.CSSProperties {
-  switch (shape) {
-    case "rectangle":
-      return { borderRadius: 2 };
-    case "rounded-rectangle":
-      return { borderRadius: 12 };
-    case "circle":
-      return { borderRadius: 9999 };
-    case "diamond":
-      return { borderRadius: 4, transform: "rotate(45deg)" };
-    case "hexagon":
-      return {
-        clipPath: "polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)",
-        borderRadius: 0,
-      };
-    case "cylinder":
-      return { borderRadius: `${w}px / 18px` };
-    default:
-      return { borderRadius: 8 };
-  }
-}
-
 const HANDLE_POSITIONS: RenderHandle[] = [
-  { id: "top-left", label: "Topo esquerdo", position: Position.Top, style: { left: "25%" } },
-  { id: "top", label: "Topo central", position: Position.Top, style: { left: "50%" } },
-  { id: "top-right", label: "Topo direito", position: Position.Top, style: { left: "75%" } },
-  { id: "right-top", label: "Direita superior", position: Position.Right, style: { top: "25%" } },
-  { id: "right", label: "Direita central", position: Position.Right, style: { top: "50%" } },
-  {
-    id: "right-bottom",
-    label: "Direita inferior",
-    position: Position.Right,
-    style: { top: "75%" },
-  },
-  { id: "bottom-right", label: "Baixo direito", position: Position.Bottom, style: { left: "75%" } },
-  { id: "bottom", label: "Baixo central", position: Position.Bottom, style: { left: "50%" } },
-  { id: "bottom-left", label: "Baixo esquerdo", position: Position.Bottom, style: { left: "25%" } },
-  { id: "left-bottom", label: "Esquerda inferior", position: Position.Left, style: { top: "75%" } },
-  { id: "left", label: "Esquerda central", position: Position.Left, style: { top: "50%" } },
-  { id: "left-top", label: "Esquerda superior", position: Position.Left, style: { top: "25%" } },
+  { id: "top-left", label: "Topo esquerdo", position: Position.Top },
+  { id: "top", label: "Topo central", position: Position.Top },
+  { id: "top-right", label: "Topo direito", position: Position.Top },
+  { id: "right-top", label: "Direita superior", position: Position.Right },
+  { id: "right", label: "Direita central", position: Position.Right },
+  { id: "right-bottom", label: "Direita inferior", position: Position.Right },
+  { id: "bottom-right", label: "Baixo direito", position: Position.Bottom },
+  { id: "bottom", label: "Baixo central", position: Position.Bottom },
+  { id: "bottom-left", label: "Baixo esquerdo", position: Position.Bottom },
+  { id: "left-bottom", label: "Esquerda inferior", position: Position.Left },
+  { id: "left", label: "Esquerda central", position: Position.Left },
+  { id: "left-top", label: "Esquerda superior", position: Position.Left },
 ];
 
 function clamp(value: number, min: number, max: number) {
@@ -85,28 +66,33 @@ function getNodeTypography(w: number, h: number, isDiamond: boolean, compactView
   };
 }
 
+function getHandleStyle(point: { x: number; y: number }, zIndex: number): React.CSSProperties {
+  return {
+    left: point.x,
+    top: point.y,
+    right: "auto",
+    bottom: "auto",
+    transform: "translate(-50%, -50%)",
+    zIndex,
+  };
+}
+
 function FluxoNodeComponent({ id, data, selected }: NodeProps) {
   const d = data as FluxoNodeData & { compactView?: boolean };
   const { setNodes } = useReactFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
   const w = d.width ?? 180;
   const h = d.height ?? 80;
   const isDiamond = d.shape === "diamond";
   const compactView = d.compactView ?? false;
   const typography = getNodeTypography(w, h, isDiamond, compactView);
+  const borderWidth = d.style.borderWidth ?? 1.5;
+  const contentFrame = getShapeContentFrame(d.shape, w, h, typography.padding);
+  const shapeInset = Math.max(4, borderWidth + 3);
 
-  const baseStyle: React.CSSProperties = {
-    width: w,
-    height: h,
-    backgroundColor: d.style.backgroundColor,
-    border: `1.5px solid ${selected ? "var(--brand)" : d.style.borderColor}`,
-    color: d.style.textColor,
-    boxShadow: selected
-      ? "0 0 0 4px color-mix(in oklab, var(--brand) 22%, transparent), 0 10px 24px -12px rgba(0,0,0,0.18)"
-      : "0 1px 2px rgba(0,0,0,0.04)",
-    transition: "box-shadow 0.16s ease, border-color 0.16s ease",
-    position: "relative",
-    ...shapeStyles(d.shape, w, h),
-  };
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [d.shape, h, id, updateNodeInternals, w]);
 
   return (
     <div className="fluxo-node group" style={{ width: w, height: h, position: "relative" }}>
@@ -134,18 +120,40 @@ function FluxoNodeComponent({ id, data, selected }: NodeProps) {
         }}
       />
 
-      <div style={baseStyle} title={d.hiddenInfo || d.summary || d.title}>
+      <div
+        className="relative"
+        style={{
+          width: w,
+          height: h,
+          color: d.style.textColor,
+          filter: selected ? "drop-shadow(0 10px 18px rgba(0,0,0,0.16))" : undefined,
+        }}
+        title={d.hiddenInfo || d.summary || d.title}
+      >
+        <ShapeRenderer
+          shape={d.shape}
+          width={w}
+          height={h}
+          fill={d.style.backgroundColor}
+          stroke={d.style.borderColor}
+          strokeWidth={borderWidth}
+          borderRadius={d.style.borderRadius}
+          selected={Boolean(selected)}
+        />
         <div
           style={{
             position: "absolute",
-            inset: 0,
+            left: contentFrame.x,
+            top: contentFrame.y,
+            width: contentFrame.width,
+            height: contentFrame.height,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            padding: typography.padding,
             textAlign: "center",
-            transform: isDiamond ? "rotate(-45deg)" : undefined,
+            zIndex: 1,
+            pointerEvents: "none",
           }}
         >
           <div
@@ -210,7 +218,7 @@ function FluxoNodeComponent({ id, data, selected }: NodeProps) {
           isConnectableStart
           isConnectableEnd
           className="!h-2.5 !w-2.5 !border !border-slate-400 !bg-white opacity-0 shadow-sm transition group-hover:opacity-90"
-          style={{ ...handle.style, zIndex: 2 }}
+          style={getHandleStyle(getShapeConnectionPoint(d.shape, w, h, handle.id, shapeInset), 2)}
           title={`Arraste daqui para criar uma seta saindo deste bloco: ${handle.label}`}
         />
       ))}
@@ -223,7 +231,7 @@ function FluxoNodeComponent({ id, data, selected }: NodeProps) {
           isConnectableStart={false}
           isConnectableEnd
           className="!h-2 !w-2 !border-0 !bg-transparent"
-          style={{ ...handle.style, zIndex: 1 }}
+          style={getHandleStyle(getShapeConnectionPoint(d.shape, w, h, handle.id, shapeInset), 1)}
           title={`Solte aqui para conectar uma seta neste bloco: ${handle.label}`}
         />
       ))}

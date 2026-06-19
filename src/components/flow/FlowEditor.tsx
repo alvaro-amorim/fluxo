@@ -71,6 +71,19 @@ import { Label } from "@/components/ui/label";
 const nodeTypes: NodeTypes = { fluxo: FluxoNode };
 const edgeTypes: EdgeTypes = { fluxo: FluxoEdge };
 
+const DEFAULT_EDGE_STROKE = "#374151";
+const DUPLICATE_EDGE_STROKES = ["#2563eb", "#16a34a", "#ea580c", "#7c3aed", "#db2777", "#0891b2"];
+
+function getNextEdgeStroke(existingEdges: Edge[], source: string, target: string) {
+  const duplicateCount = existingEdges.filter(
+    (edge) => edge.source === source && edge.target === target,
+  ).length;
+
+  if (duplicateCount === 0) return DEFAULT_EDGE_STROKE;
+
+  return DUPLICATE_EDGE_STROKES[(duplicateCount - 1) % DUPLICATE_EDGE_STROKES.length];
+}
+
 type FlowSnapshot = { nodes: Node[]; edges: Edge[] };
 
 interface FlowEditorProps {
@@ -269,7 +282,12 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           type: "orthogonal",
           stroke: "solid",
           hasArrow: true,
-          style: { stroke: "#374151", strokeWidth: 2, strokeDasharray: null, markerEnd: "arrow" },
+          style: {
+            stroke: getNextEdgeStroke(edges, source, target),
+            strokeWidth: 2,
+            strokeDasharray: null,
+            markerEnd: "arrow",
+          },
           routing: { mode: "auto", points: [], avoidCrossings: true },
           semantic: { ...DEFAULT_EDGE_SEMANTIC },
           customFields: [],
@@ -281,7 +299,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         setConnectionState(null);
       }
     },
-    [createEdge, nodes, resolveAutoEdges, snapshot, connectionState],
+    [createEdge, edges, nodes, resolveAutoEdges, snapshot, connectionState],
   );
 
   const handleNodeClick = useCallback(
@@ -310,7 +328,12 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           type: "orthogonal",
           stroke: "solid",
           hasArrow: true,
-          style: { stroke: "#374151", strokeWidth: 2, strokeDasharray: null, markerEnd: "arrow" },
+          style: {
+            stroke: getNextEdgeStroke(edges, pendingConnectionSource, node.id),
+            strokeWidth: 2,
+            strokeDasharray: null,
+            markerEnd: "arrow",
+          },
           routing: { mode: "auto", points: [], avoidCrossings: true },
           semantic: { ...DEFAULT_EDGE_SEMANTIC },
           customFields: [],
@@ -324,7 +347,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         setSelectedEdge(null);
       }
     },
-    [tool, pendingConnectionSource, createEdge, nodes, resolveAutoEdges, snapshot],
+    [tool, pendingConnectionSource, createEdge, edges, nodes, resolveAutoEdges, snapshot],
   );
 
   const addBlock = useCallback(

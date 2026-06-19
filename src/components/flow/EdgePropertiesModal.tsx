@@ -25,7 +25,16 @@ const STROKES: { id: EdgeStrokeType; label: string }[] = [
   { id: "dashed", label: "Pontilhada" },
 ];
 
-const EDGE_COLORS = ["#374151", "#111827", "#2563eb", "#16a34a", "#f97316", "#dc2626", "#7c3aed", "#0f766e"];
+const EDGE_COLORS = [
+  "#374151",
+  "#111827",
+  "#2563eb",
+  "#16a34a",
+  "#f97316",
+  "#dc2626",
+  "#7c3aed",
+  "#0f766e",
+];
 
 type ManualHandlePosition = Exclude<FlowHandlePosition, "auto">;
 
@@ -122,8 +131,12 @@ export function EdgePropertiesModal({
 
   const edgeColor = draft.style?.stroke ?? "#374151";
   const edgeWidth = draft.style?.strokeWidth ?? 2;
-  const sourceHandle = (draft.sourceHandle === "auto" ? "right" : (draft.sourceHandle ?? "right")) as ManualHandlePosition;
-  const targetHandle = (draft.targetHandle === "auto" ? "left" : (draft.targetHandle ?? "left")) as ManualHandlePosition;
+  const sourceHandle = (
+    draft.sourceHandle === "auto" ? "right" : (draft.sourceHandle ?? "right")
+  ) as ManualHandlePosition;
+  const targetHandle = (
+    draft.targetHandle === "auto" ? "left" : (draft.targetHandle ?? "left")
+  ) as ManualHandlePosition;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -261,10 +274,16 @@ export function EdgePropertiesModal({
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
-              <Row label="Sai do bloco origem" hint={draft.sourceHandle === "auto" ? "automático" : undefined}>
+              <Row
+                label="Sai do bloco origem"
+                hint={draft.sourceHandle === "auto" ? "automático" : undefined}
+              >
                 <HandlePicker value={sourceHandle} onChange={(v) => setHandle("sourceHandle", v)} />
               </Row>
-              <Row label="Entra no bloco destino" hint={draft.targetHandle === "auto" ? "automático" : undefined}>
+              <Row
+                label="Entra no bloco destino"
+                hint={draft.targetHandle === "auto" ? "automático" : undefined}
+              >
                 <HandlePicker value={targetHandle} onChange={(v) => setHandle("targetHandle", v)} />
               </Row>
             </div>
@@ -359,7 +378,10 @@ export function EdgePropertiesModal({
   );
 }
 
-function normalizeEdgeStyle(draft: FluxoEdgeData, patch: Partial<FlowEdgeStyle> = {}): FlowEdgeStyle {
+function normalizeEdgeStyle(
+  draft: FluxoEdgeData,
+  patch: Partial<FlowEdgeStyle> = {},
+): FlowEdgeStyle {
   const stroke = patch.stroke ?? draft.style?.stroke ?? "#374151";
   const strokeWidth = patch.strokeWidth ?? draft.style?.strokeWidth ?? 2;
   const strokeDasharray =

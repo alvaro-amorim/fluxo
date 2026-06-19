@@ -39,7 +39,12 @@ const HANDLE_POSITIONS: RenderHandle[] = [
   { id: "top-right", label: "Topo direito", position: Position.Top, style: { left: "75%" } },
   { id: "right-top", label: "Direita superior", position: Position.Right, style: { top: "25%" } },
   { id: "right", label: "Direita central", position: Position.Right, style: { top: "50%" } },
-  { id: "right-bottom", label: "Direita inferior", position: Position.Right, style: { top: "75%" } },
+  {
+    id: "right-bottom",
+    label: "Direita inferior",
+    position: Position.Right,
+    style: { top: "75%" },
+  },
   { id: "bottom-right", label: "Baixo direito", position: Position.Bottom, style: { left: "75%" } },
   { id: "bottom", label: "Baixo central", position: Position.Bottom, style: { left: "50%" } },
   { id: "bottom-left", label: "Baixo esquerdo", position: Position.Bottom, style: { left: "25%" } },

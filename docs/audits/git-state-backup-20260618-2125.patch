@@ -1,0 +1,270 @@
+diff --git a/src/components/flow/EdgePropertiesModal.tsx b/src/components/flow/EdgePropertiesModal.tsx
+index 8f94688..d394eb1 100644
+--- a/src/components/flow/EdgePropertiesModal.tsx
++++ b/src/components/flow/EdgePropertiesModal.tsx
+@@ -25,7 +25,16 @@ const STROKES: { id: EdgeStrokeType; label: string }[] = [
+   { id: "dashed", label: "Pontilhada" },
+ ];
+ 
+-const EDGE_COLORS = ["#374151", "#111827", "#2563eb", "#16a34a", "#f97316", "#dc2626", "#7c3aed", "#0f766e"];
++const EDGE_COLORS = [
++  "#374151",
++  "#111827",
++  "#2563eb",
++  "#16a34a",
++  "#f97316",
++  "#dc2626",
++  "#7c3aed",
++  "#0f766e",
++];
+ 
+ type ManualHandlePosition = Exclude<FlowHandlePosition, "auto">;
+ 
+@@ -122,8 +131,12 @@ export function EdgePropertiesModal({
+ 
+   const edgeColor = draft.style?.stroke ?? "#374151";
+   const edgeWidth = draft.style?.strokeWidth ?? 2;
+-  const sourceHandle = (draft.sourceHandle === "auto" ? "right" : (draft.sourceHandle ?? "right")) as ManualHandlePosition;
+-  const targetHandle = (draft.targetHandle === "auto" ? "left" : (draft.targetHandle ?? "left")) as ManualHandlePosition;
++  const sourceHandle = (
++    draft.sourceHandle === "auto" ? "right" : (draft.sourceHandle ?? "right")
++  ) as ManualHandlePosition;
++  const targetHandle = (
++    draft.targetHandle === "auto" ? "left" : (draft.targetHandle ?? "left")
++  ) as ManualHandlePosition;
+ 
+   return (
+     <Dialog open={open} onOpenChange={onOpenChange}>
+@@ -261,10 +274,16 @@ export function EdgePropertiesModal({
+             </div>
+ 
+             <div className="grid gap-3 md:grid-cols-2">
+-              <Row label="Sai do bloco origem" hint={draft.sourceHandle === "auto" ? "automático" : undefined}>
++              <Row
++                label="Sai do bloco origem"
++                hint={draft.sourceHandle === "auto" ? "automático" : undefined}
++              >
+                 <HandlePicker value={sourceHandle} onChange={(v) => setHandle("sourceHandle", v)} />
+               </Row>
+-              <Row label="Entra no bloco destino" hint={draft.targetHandle === "auto" ? "automático" : undefined}>
++              <Row
++                label="Entra no bloco destino"
++                hint={draft.targetHandle === "auto" ? "automático" : undefined}
++              >
+                 <HandlePicker value={targetHandle} onChange={(v) => setHandle("targetHandle", v)} />
+               </Row>
+             </div>
+@@ -359,7 +378,10 @@ export function EdgePropertiesModal({
+   );
+ }
+ 
+-function normalizeEdgeStyle(draft: FluxoEdgeData, patch: Partial<FlowEdgeStyle> = {}): FlowEdgeStyle {
++function normalizeEdgeStyle(
++  draft: FluxoEdgeData,
++  patch: Partial<FlowEdgeStyle> = {},
++): FlowEdgeStyle {
+   const stroke = patch.stroke ?? draft.style?.stroke ?? "#374151";
+   const strokeWidth = patch.strokeWidth ?? draft.style?.strokeWidth ?? 2;
+   const strokeDasharray =
+diff --git a/src/components/flow/FlowEditor.tsx b/src/components/flow/FlowEditor.tsx
+index 7a723a1..6633a10 100644
+--- a/src/components/flow/FlowEditor.tsx
++++ b/src/components/flow/FlowEditor.tsx
+@@ -83,6 +83,99 @@ function getNextEdgeStroke(existingEdges: Edge[], source: string, target: string
+ 
+   return DUPLICATE_EDGE_STROKES[(duplicateCount - 1) % DUPLICATE_EDGE_STROKES.length];
+ }
++function getNextDuplicateEdgeHandles(
++  existingEdges: Edge[],
++  existingNodes: Node[],
++  source: string,
++  target: string,
++  requestedSourceHandle: FluxoEdgeSerialized["sourceHandle"] | undefined,
++  requestedTargetHandle: FluxoEdgeSerialized["targetHandle"] | undefined,
++): Pick<FluxoEdgeSerialized, "sourceHandle" | "targetHandle"> {
++  const duplicateCount = existingEdges.filter(
++    (edge) => edge.source === source && edge.target === target,
++  ).length;
++
++  const sourceHandle = requestedSourceHandle ?? "auto";
++  const targetHandle = requestedTargetHandle ?? "auto";
++
++  if (duplicateCount === 0) {
++    return { sourceHandle, targetHandle };
++  }
++
++  const pair = getDuplicateHandlePairs(existingNodes, source, target)[
++    duplicateCount % getDuplicateHandlePairs(existingNodes, source, target).length
++  ];
++
++  return {
++    sourceHandle: shouldAutoSlotDuplicateHandle(sourceHandle) ? pair.sourceHandle : sourceHandle,
++    targetHandle: shouldAutoSlotDuplicateHandle(targetHandle) ? pair.targetHandle : targetHandle,
++  };
++}
++
++function shouldAutoSlotDuplicateHandle(handle: string | undefined) {
++  if (!handle || handle === "auto") return true;
++
++  // Handles centrais como left/right/top/bottom podem ser redistribuidos em duplicatas.
++  // Handles especificos como right-top ou left-bottom sao respeitados.
++  return !handle.includes("-");
++}
++
++function getDuplicateHandlePairs(
++  existingNodes: Node[],
++  source: string,
++  target: string,
++): Array<Pick<FluxoEdgeSerialized, "sourceHandle" | "targetHandle">> {
++  const sourceCenter = getNodeCenter(existingNodes, source);
++  const targetCenter = getNodeCenter(existingNodes, target);
++  const dx = targetCenter.x - sourceCenter.x;
++  const dy = targetCenter.y - sourceCenter.y;
++
++  if (Math.abs(dx) >= Math.abs(dy)) {
++    return dx >= 0
++      ? [
++          { sourceHandle: "right", targetHandle: "left" },
++          { sourceHandle: "right-top", targetHandle: "left-top" },
++          { sourceHandle: "right-bottom", targetHandle: "left-bottom" },
++          { sourceHandle: "top-right", targetHandle: "top-left" },
++          { sourceHandle: "bottom-right", targetHandle: "bottom-left" },
++        ]
++      : [
++          { sourceHandle: "left", targetHandle: "right" },
++          { sourceHandle: "left-top", targetHandle: "right-top" },
++          { sourceHandle: "left-bottom", targetHandle: "right-bottom" },
++          { sourceHandle: "top-left", targetHandle: "top-right" },
++          { sourceHandle: "bottom-left", targetHandle: "bottom-right" },
++        ];
++  }
++
++  return dy >= 0
++    ? [
++        { sourceHandle: "bottom", targetHandle: "top" },
++        { sourceHandle: "bottom-left", targetHandle: "top-left" },
++        { sourceHandle: "bottom-right", targetHandle: "top-right" },
++        { sourceHandle: "left-bottom", targetHandle: "left-top" },
++        { sourceHandle: "right-bottom", targetHandle: "right-top" },
++      ]
++    : [
++        { sourceHandle: "top", targetHandle: "bottom" },
++        { sourceHandle: "top-left", targetHandle: "bottom-left" },
++        { sourceHandle: "top-right", targetHandle: "bottom-right" },
++        { sourceHandle: "left-top", targetHandle: "left-bottom" },
++        { sourceHandle: "right-top", targetHandle: "right-bottom" },
++      ];
++}
++
++function getNodeCenter(existingNodes: Node[], nodeId: string) {
++  const node = existingNodes.find((item) => item.id === nodeId);
++  const data = node?.data as FluxoNodeData | undefined;
++  const width = data?.width ?? 180;
++  const height = data?.height ?? 80;
++
++  return {
++    x: (node?.position.x ?? 0) + width / 2,
++    y: (node?.position.y ?? 0) + height / 2,
++  };
++}
+ 
+ type FlowSnapshot = { nodes: Node[]; edges: Edge[] };
+ 
+@@ -269,6 +362,17 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
+           return;
+         }
+ 
++        const duplicateHandles = getNextDuplicateEdgeHandles(
++          edges,
++          nodes,
++          source,
++          target,
++          sourceHandle,
++          targetHandle,
++        );
++        sourceHandle = duplicateHandles.sourceHandle;
++        targetHandle = duplicateHandles.targetHandle;
++
+         snapshot();
+         const id = `edge-${Date.now()}`;
+         const serialized: FluxoEdgeSerialized = {
+@@ -321,8 +425,14 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
+           id,
+           source: pendingConnectionSource,
+           target: node.id,
+-          sourceHandle: "auto",
+-          targetHandle: "auto",
++          ...getNextDuplicateEdgeHandles(
++            edges,
++            nodes,
++            pendingConnectionSource,
++            node.id,
++            "auto",
++            "auto",
++          ),
+           label: undefined,
+           hiddenInfo: "",
+           type: "orthogonal",
+@@ -522,8 +632,14 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
+         targetHandle: "auto",
+         data: {
+           ...data,
+-          sourceHandle: "auto",
+-          targetHandle: "auto",
++          ...getNextDuplicateEdgeHandles(
++            edges,
++            nodes,
++            pendingConnectionSource,
++            node.id,
++            "auto",
++            "auto",
++          ),
+           routing: { ...(data.routing ?? {}), mode: "auto", points: [] },
+         },
+       };
+@@ -574,8 +690,14 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
+           ...edge,
+           source: edge.target,
+           target: edge.source,
+-          sourceHandle: "auto",
+-          targetHandle: "auto",
++          ...getNextDuplicateEdgeHandles(
++            edges,
++            nodes,
++            pendingConnectionSource,
++            node.id,
++            "auto",
++            "auto",
++          ),
+           data: data
+             ? {
+                 ...data,
+diff --git a/src/components/flow/FluxoNode.tsx b/src/components/flow/FluxoNode.tsx
+index 13fb7a7..8d9ceb9 100644
+--- a/src/components/flow/FluxoNode.tsx
++++ b/src/components/flow/FluxoNode.tsx
+@@ -39,7 +39,12 @@ const HANDLE_POSITIONS: RenderHandle[] = [
+   { id: "top-right", label: "Topo direito", position: Position.Top, style: { left: "75%" } },
+   { id: "right-top", label: "Direita superior", position: Position.Right, style: { top: "25%" } },
+   { id: "right", label: "Direita central", position: Position.Right, style: { top: "50%" } },
+-  { id: "right-bottom", label: "Direita inferior", position: Position.Right, style: { top: "75%" } },
++  {
++    id: "right-bottom",
++    label: "Direita inferior",
++    position: Position.Right,
++    style: { top: "75%" },
++  },
+   { id: "bottom-right", label: "Baixo direito", position: Position.Bottom, style: { left: "75%" } },
+   { id: "bottom", label: "Baixo central", position: Position.Bottom, style: { left: "50%" } },
+   { id: "bottom-left", label: "Baixo esquerdo", position: Position.Bottom, style: { left: "25%" } },
+diff --git a/src/lib/flow/types.ts b/src/lib/flow/types.ts
+index edcc8cc..0cd861c 100644
+--- a/src/lib/flow/types.ts
++++ b/src/lib/flow/types.ts
+@@ -230,4 +230,4 @@ export const DEFAULT_EDGE_SEMANTIC: EdgeSemantic = {
+   priority: "normal",
+   rules: [],
+   notes: "",
+-};
+\ No newline at end of file
++};

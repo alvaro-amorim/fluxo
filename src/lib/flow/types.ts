@@ -17,6 +17,7 @@ export type ShapeType =
 // `smooth`, `dashed` e `no-arrow` ficam preparados para o schema oficial.
 export type EdgeLineType = "orthogonal" | "straight" | "bezier" | "smooth" | "dashed" | "no-arrow";
 export type EdgeStrokeType = "solid" | "dashed";
+export type EdgeDirection = "forward" | "bidirectional";
 export type FlowHandlePosition =
   | "top-left"
   | "top"
@@ -123,6 +124,7 @@ export interface FluxoEdgeData {
   lineType: EdgeLineType;
   stroke: EdgeStrokeType;
   hasArrow: boolean;
+  direction?: EdgeDirection;
   semantic: EdgeSemantic;
   sourceHandle?: FlowHandlePosition;
   targetHandle?: FlowHandlePosition;
@@ -172,6 +174,7 @@ export interface FluxoEdgeSerialized {
   type: EdgeLineType;
   stroke?: EdgeStrokeType;
   hasArrow?: boolean;
+  direction?: EdgeDirection;
   style?: FlowEdgeStyle;
   routing?: FlowEdgeRouting;
   semantic: EdgeSemantic;

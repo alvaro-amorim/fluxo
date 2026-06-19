@@ -107,12 +107,18 @@ function FluxoNodeComponent({ id, data, selected }: NodeProps) {
             nodes.map((node) => {
               if (node.id !== id) return node;
               const nodeData = node.data as FluxoNodeData;
+              const width = Math.max(80, params.width);
+              const height = Math.max(40, params.height);
               return {
                 ...node,
+                position: {
+                  x: Number.isFinite(params.x) ? params.x : node.position.x,
+                  y: Number.isFinite(params.y) ? params.y : node.position.y,
+                },
                 data: {
                   ...nodeData,
-                  width: Math.max(80, params.width),
-                  height: Math.max(40, params.height),
+                  width,
+                  height,
                 },
               };
             }),

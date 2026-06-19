@@ -28,6 +28,10 @@ const VALID_HANDLE_POSITIONS = new Set<string>([
   "auto",
 ]);
 
+function normalizeEdgeDirection(value: unknown) {
+  return value === "bidirectional" ? "bidirectional" : "forward";
+}
+
 export function fluxoNodeToReactFlowNode(node: FluxoNodeSerialized): Node {
   const data: FluxoNodeData = {
     shape: node.shape,
@@ -54,6 +58,17 @@ export function fluxoEdgeToReactFlowEdge(edge: FluxoEdgeSerialized): Edge {
   const normalizedLineType = edge.type === "smooth" ? "orthogonal" : edge.type;
   const hasArrow = edge.hasArrow ?? edge.type !== "no-arrow";
   const stroke = edge.stroke ?? (edge.type === "dashed" ? "dashed" : "solid");
+  const direction = normalizeEdgeDirection(edge.direction);
+  const markerColor = edge.style?.stroke ?? "#64748b";
+  const marker =
+    hasArrow || direction === "bidirectional"
+      ? {
+          type: MarkerType.ArrowClosed,
+          color: markerColor,
+          width: 18,
+          height: 18,
+        }
+      : undefined;
 
   const data: FluxoEdgeData = {
     label: edge.label,
@@ -61,6 +76,7 @@ export function fluxoEdgeToReactFlowEdge(edge: FluxoEdgeSerialized): Edge {
     lineType: normalizedLineType as EdgeLineType,
     stroke,
     hasArrow,
+    direction,
     semantic: edge.semantic ?? DEFAULT_EDGE_SEMANTIC,
     sourceHandle: edge.sourceHandle,
     targetHandle: edge.targetHandle,
@@ -77,14 +93,8 @@ export function fluxoEdgeToReactFlowEdge(edge: FluxoEdgeSerialized): Edge {
     targetHandle: edge.targetHandle,
     label: edge.label,
     type: "fluxo",
-    markerEnd: hasArrow
-      ? {
-          type: MarkerType.ArrowClosed,
-          color: edge.style?.stroke ?? "#64748b",
-          width: 18,
-          height: 18,
-        }
-      : undefined,
+    markerStart: direction === "bidirectional" ? marker : undefined,
+    markerEnd: hasArrow || direction === "bidirectional" ? marker : undefined,
     style: {
       stroke: edge.style?.stroke,
       strokeWidth: edge.style?.strokeWidth,
@@ -144,6 +154,7 @@ export function reactFlowEdgeToFluxoEdge(edge: Edge): FluxoEdgeSerialized {
     type: data.lineType,
     stroke: data.stroke,
     hasArrow: data.hasArrow,
+    direction: data.direction === "bidirectional" ? "bidirectional" : undefined,
     style: data.style,
     routing: data.routing,
     semantic: data.semantic,

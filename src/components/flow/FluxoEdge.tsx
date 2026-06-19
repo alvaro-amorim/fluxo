@@ -13,6 +13,12 @@ import type { EdgeLineType, FluxoEdgeData } from "@/lib/flow/types";
 type EdgePath = [path: string, labelX: number, labelY: number, offsetX: number, offsetY: number];
 type Point = ManualRoutePoint;
 
+const MAX_LANE_OFFSET = 72;
+const ENDPOINT_LANE_OFFSET_FACTOR = 0.34;
+const MIN_ENDPOINT_LANE_OFFSET = 4;
+const MAX_ENDPOINT_LANE_OFFSET = 18;
+const SOURCE_STROKE_NUDGE = 0.75;
+
 export function FluxoEdge(props: EdgeProps) {
   const {
     id,
@@ -22,15 +28,21 @@ export function FluxoEdge(props: EdgeProps) {
     targetY,
     sourcePosition,
     targetPosition,
+    markerStart,
     markerEnd,
     style,
     selected,
   } = props;
   const data = props.data as FluxoEdgeData | undefined;
   const lineType = data?.lineType ?? "orthogonal";
+  const stroke = style?.stroke ?? data?.style?.stroke ?? "#64748b";
+  const strokeWidth = Number(style?.strokeWidth ?? data?.style?.strokeWidth ?? 2);
   const manualPoints = normalizeManualRoutePoints(
     data?.routing?.mode === "manual" ? data.routing.points : [],
   );
+  const visualLaneOffset =
+    typeof data?.__visualLaneOffset === "number" ? data.__visualLaneOffset : 0;
+  const visualLaneCount = typeof data?.__visualLaneCount === "number" ? data.__visualLaneCount : 1;
   const [path, labelX, labelY] = getFluxoEdgePath({
     lineType,
     sourceX,
@@ -40,12 +52,15 @@ export function FluxoEdge(props: EdgeProps) {
     sourcePosition,
     targetPosition,
     manualPoints,
+    visualLaneOffset,
+    visualLaneCount,
+    hasMarkerStart: Boolean(markerStart),
+    hasMarkerEnd: Boolean(markerEnd),
+    strokeWidth,
   });
 
   const label = data?.label;
   const hiddenInfo = data?.hiddenInfo;
-  const stroke = style?.stroke ?? data?.style?.stroke ?? "#64748b";
-  const strokeWidth = Number(style?.strokeWidth ?? data?.style?.strokeWidth ?? 2);
   const hasLabel = Boolean(label?.trim());
   const hasHiddenInfo = Boolean(hiddenInfo?.trim());
 
@@ -63,6 +78,7 @@ export function FluxoEdge(props: EdgeProps) {
       <BaseEdge
         id={id}
         path={path}
+        markerStart={markerStart}
         markerEnd={markerEnd}
         interactionWidth={24}
         style={{
@@ -132,6 +148,11 @@ function getFluxoEdgePath({
   sourcePosition,
   targetPosition,
   manualPoints,
+  visualLaneOffset,
+  visualLaneCount,
+  hasMarkerStart,
+  hasMarkerEnd,
+  strokeWidth,
 }: {
   lineType: EdgeLineType;
   sourceX: number;
@@ -141,24 +162,74 @@ function getFluxoEdgePath({
   sourcePosition: EdgeProps["sourcePosition"];
   targetPosition: EdgeProps["targetPosition"];
   manualPoints: Point[];
+  visualLaneOffset?: number;
+  visualLaneCount?: number;
+  hasMarkerStart?: boolean;
+  hasMarkerEnd?: boolean;
+  strokeWidth?: number;
 }): EdgePath {
   const normalizedManualPoints = normalizeManualRoutePoints(manualPoints);
+  const laneOffset =
+    visualLaneCount && visualLaneCount > 1 && visualLaneOffset
+      ? clampLaneOffset(visualLaneOffset)
+      : 0;
+  const offset = getPerpendicularOffset(sourceX, sourceY, targetX, targetY, laneOffset);
+  const { source: visualSource, target: visualTarget } = getVisualEdgeEndpoints({
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    laneOffset,
+    hasMarkerStart: Boolean(hasMarkerStart),
+    hasMarkerEnd: Boolean(hasMarkerEnd),
+    strokeWidth: strokeWidth ?? 2,
+  });
+  const laneCenter = {
+    x: (sourceX + targetX) / 2 + offset.x,
+    y: (sourceY + targetY) / 2 + offset.y,
+  };
 
   if (normalizedManualPoints.length > 0) {
     return getManualPath({
-      sourceX,
-      sourceY,
-      targetX,
-      targetY,
-      manualPoints: normalizedManualPoints,
+      sourceX: visualSource.x,
+      sourceY: visualSource.y,
+      targetX: visualTarget.x,
+      targetY: visualTarget.y,
+      manualPoints:
+        laneOffset && Math.abs(laneOffset) > 0.5
+          ? normalizedManualPoints.map((point) => ({
+              x: point.x + offset.x,
+              y: point.y + offset.y,
+            }))
+          : normalizedManualPoints,
     });
   }
 
   if (lineType === "straight") {
+    if (laneOffset && Math.abs(laneOffset) > 0.5) {
+      return getStraightPath({
+        sourceX: visualSource.x,
+        sourceY: visualSource.y,
+        targetX: visualTarget.x,
+        targetY: visualTarget.y,
+      });
+    }
+
     return getStraightPath({ sourceX, sourceY, targetX, targetY });
   }
 
   if (lineType === "bezier") {
+    if (laneOffset && Math.abs(laneOffset) > 0.5) {
+      return getQuadraticPath({
+        sourceX: visualSource.x,
+        sourceY: visualSource.y,
+        targetX: visualTarget.x,
+        targetY: visualTarget.y,
+        controlX: laneCenter.x,
+        controlY: laneCenter.y,
+      });
+    }
+
     return getBezierPath({
       sourceX,
       sourceY,
@@ -170,14 +241,129 @@ function getFluxoEdgePath({
   }
 
   return getSmoothStepPath({
+    sourceX: visualSource.x,
+    sourceY: visualSource.y,
+    targetX: visualTarget.x,
+    targetY: visualTarget.y,
+    sourcePosition,
+    targetPosition,
+    borderRadius: 12,
+    centerX: laneOffset && Math.abs(laneOffset) > 0.5 ? laneCenter.x : undefined,
+    centerY: laneOffset && Math.abs(laneOffset) > 0.5 ? laneCenter.y : undefined,
+  });
+}
+
+function clampLaneOffset(offset: number) {
+  return Math.max(-MAX_LANE_OFFSET, Math.min(MAX_LANE_OFFSET, offset));
+}
+
+function getEndpointLaneOffset(offset: number) {
+  if (!offset) return 0;
+
+  const direction = Math.sign(offset);
+  const magnitude = Math.min(
+    MAX_ENDPOINT_LANE_OFFSET,
+    Math.max(MIN_ENDPOINT_LANE_OFFSET, Math.abs(offset) * ENDPOINT_LANE_OFFSET_FACTOR),
+  );
+
+  return direction * magnitude;
+}
+
+function getVisualEdgeEndpoints({
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  laneOffset,
+  hasMarkerStart,
+  hasMarkerEnd,
+  strokeWidth,
+}: {
+  sourceX: number;
+  sourceY: number;
+  targetX: number;
+  targetY: number;
+  laneOffset: number;
+  hasMarkerStart: boolean;
+  hasMarkerEnd: boolean;
+  strokeWidth: number;
+}): { source: Point; target: Point } {
+  const endpointOffset = getPerpendicularOffset(
     sourceX,
     sourceY,
     targetX,
     targetY,
-    sourcePosition,
-    targetPosition,
-    borderRadius: 12,
-  });
+    getEndpointLaneOffset(laneOffset),
+  );
+  const source = {
+    x: sourceX + endpointOffset.x,
+    y: sourceY + endpointOffset.y,
+  };
+  const target = {
+    x: targetX + endpointOffset.x,
+    y: targetY + endpointOffset.y,
+  };
+
+  const sourceNudge = hasMarkerStart ? 0 : Math.min(SOURCE_STROKE_NUDGE, strokeWidth * 0.35);
+  const targetNudge = hasMarkerEnd ? 0 : 0;
+
+  return {
+    source: movePointAlongVector(source, target, sourceNudge),
+    target: movePointAlongVector(target, source, targetNudge),
+  };
+}
+
+function movePointAlongVector(point: Point, toward: Point, distance: number): Point {
+  if (!distance) return point;
+
+  const dx = toward.x - point.x;
+  const dy = toward.y - point.y;
+  const length = Math.hypot(dx, dy);
+  if (length < 1) return point;
+
+  return {
+    x: point.x + (dx / length) * distance,
+    y: point.y + (dy / length) * distance,
+  };
+}
+
+function getPerpendicularOffset(
+  sourceX: number,
+  sourceY: number,
+  targetX: number,
+  targetY: number,
+  laneOffset: number,
+): Point {
+  if (!laneOffset) return { x: 0, y: 0 };
+
+  const dx = targetX - sourceX;
+  const dy = targetY - sourceY;
+  const length = Math.hypot(dx, dy);
+  if (length < 1) return { x: 0, y: 0 };
+
+  return {
+    x: (-dy / length) * laneOffset,
+    y: (dx / length) * laneOffset,
+  };
+}
+
+function getQuadraticPath({
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  controlX,
+  controlY,
+}: {
+  sourceX: number;
+  sourceY: number;
+  targetX: number;
+  targetY: number;
+  controlX: number;
+  controlY: number;
+}): EdgePath {
+  const path = `M ${sourceX},${sourceY} Q ${controlX},${controlY} ${targetX},${targetY}`;
+  return [path, controlX, controlY, Math.abs(controlX - sourceX), Math.abs(controlY - sourceY)];
 }
 
 function getManualPath({

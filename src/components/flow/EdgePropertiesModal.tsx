@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Trash2, EyeOff, ArrowRight, MoveHorizontal } from "lucide-react";
 import type {
   FluxoEdgeData,
+  EdgeDirection,
   EdgeLineType,
   EdgeStrokeType,
   FlowEdgeStyle,
@@ -23,6 +24,11 @@ const LINE_TYPES: { id: EdgeLineType; label: string }[] = [
 const STROKES: { id: EdgeStrokeType; label: string }[] = [
   { id: "solid", label: "Contínua" },
   { id: "dashed", label: "Pontilhada" },
+];
+
+const DIRECTIONS: { id: EdgeDirection; label: string }[] = [
+  { id: "forward", label: "Apenas ida" },
+  { id: "bidirectional", label: "Duplo sentido" },
 ];
 
 const EDGE_COLORS = [
@@ -100,6 +106,18 @@ export function EdgePropertiesModal({
       hasArrow,
       style: normalizeEdgeStyle({ ...draft, hasArrow }, { markerEnd: hasArrow ? "arrow" : "none" }),
     });
+  const updateDirection = (direction: EdgeDirection) => {
+    const hasArrow = direction === "bidirectional" ? true : draft.hasArrow;
+    setDraft({
+      ...draft,
+      direction,
+      hasArrow,
+      style: normalizeEdgeStyle(
+        { ...draft, direction, hasArrow },
+        { markerEnd: hasArrow ? "arrow" : "none" },
+      ),
+    });
+  };
 
   const setHandle = (field: "sourceHandle" | "targetHandle", value: FlowHandlePosition) => {
     setDraft({
@@ -154,6 +172,7 @@ export function EdgePropertiesModal({
             lineType={draft.lineType}
             stroke={draft.stroke}
             hasArrow={draft.hasArrow}
+            direction={draft.direction ?? "forward"}
             edgeStyle={draft.style}
           />
         </DialogHeader>
@@ -203,6 +222,18 @@ export function EdgePropertiesModal({
               />
             </Row>
           </div>
+
+          <Row label="DireÃ§Ã£o da seta" hint="Uma ponta ou duas pontas">
+            <SegmentedGroup
+              options={DIRECTIONS.map((direction) => ({
+                id: direction.id,
+                label: direction.label,
+                icon: <LineGlyph lineType="straight" stroke="solid" />,
+              }))}
+              value={draft.direction ?? "forward"}
+              onChange={(value) => updateDirection(value as EdgeDirection)}
+            />
+          </Row>
 
           <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-card p-4">
             <Row label="Cor da seta" hint="Linha e ponta">
@@ -304,7 +335,11 @@ export function EdgePropertiesModal({
                 <div className="text-xs text-muted-foreground">Conexão direcional ou simples</div>
               </div>
             </div>
-            <Switch checked={draft.hasArrow} onCheckedChange={updateArrow} />
+            <Switch
+              checked={draft.direction === "bidirectional" || draft.hasArrow}
+              disabled={draft.direction === "bidirectional"}
+              onCheckedChange={updateArrow}
+            />
           </div>
 
           <Row label="Condição" hint="Quando este caminho é percorrido">
@@ -529,23 +564,35 @@ function EdgePreview({
   lineType,
   stroke,
   hasArrow,
+  direction,
   edgeStyle,
 }: {
   lineType: EdgeLineType;
   stroke: EdgeStrokeType;
   hasArrow: boolean;
+  direction: EdgeDirection;
   edgeStyle?: FlowEdgeStyle;
 }) {
   const dash = stroke === "dashed" ? "6 4" : undefined;
   const color = edgeStyle?.stroke ?? "currentColor";
   const width = edgeStyle?.strokeWidth ?? 1.6;
+  const bidirectional = direction === "bidirectional";
+  const markerStart = bidirectional ? "url(#modal-arr)" : undefined;
+  const markerEnd = hasArrow || bidirectional ? "url(#modal-arr)" : undefined;
 
   return (
     <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-muted/40 p-3">
       <span className="h-6 w-10 rounded-md border border-border bg-card" />
       <svg viewBox="0 0 80 16" className="h-4 flex-1 text-foreground/70">
         <defs>
-          <marker id="modal-arr" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
+          <marker
+            id="modal-arr"
+            markerWidth="5"
+            markerHeight="5"
+            refX="4"
+            refY="2.5"
+            orient="auto-start-reverse"
+          >
             <path d="M0,0 L5,2.5 L0,5 z" fill={color} />
           </marker>
         </defs>
@@ -558,7 +605,8 @@ function EdgePreview({
             stroke={color}
             strokeWidth={width}
             strokeDasharray={dash}
-            markerEnd={hasArrow ? "url(#modal-arr)" : undefined}
+            markerStart={markerStart}
+            markerEnd={markerEnd}
           />
         )}
         {lineType === "orthogonal" && (
@@ -568,7 +616,8 @@ function EdgePreview({
             stroke={color}
             strokeWidth={width}
             strokeDasharray={dash}
-            markerEnd={hasArrow ? "url(#modal-arr)" : undefined}
+            markerStart={markerStart}
+            markerEnd={markerEnd}
           />
         )}
         {lineType === "bezier" && (
@@ -578,7 +627,8 @@ function EdgePreview({
             stroke={color}
             strokeWidth={width}
             strokeDasharray={dash}
-            markerEnd={hasArrow ? "url(#modal-arr)" : undefined}
+            markerStart={markerStart}
+            markerEnd={markerEnd}
           />
         )}
       </svg>

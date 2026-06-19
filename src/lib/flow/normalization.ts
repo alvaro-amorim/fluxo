@@ -3,6 +3,7 @@ import {
   DEFAULT_EDGE_SEMANTIC,
   DEFAULT_NODE_STYLE,
   DEFAULT_SEMANTIC,
+  type EdgeDirection,
   type EdgeLineType,
   type EdgeStrokeType,
   type FlowFile,
@@ -31,6 +32,22 @@ import {
 } from "./defaults";
 
 type UnknownRecord = Record<string, unknown>;
+
+const VALID_HANDLE_POSITIONS = new Set<FlowHandlePosition>([
+  "top-left",
+  "top",
+  "top-right",
+  "right-top",
+  "right",
+  "right-bottom",
+  "bottom-right",
+  "bottom",
+  "bottom-left",
+  "left-bottom",
+  "left",
+  "left-top",
+  "auto",
+]);
 
 function isObject(value: unknown): value is UnknownRecord {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -157,6 +174,10 @@ function normalizeStroke(input: unknown): EdgeStrokeType {
   return asString(input, "solid") === "dashed" ? "dashed" : "solid";
 }
 
+function normalizeEdgeDirection(input: unknown): EdgeDirection {
+  return asString(input, "forward") === "bidirectional" ? "bidirectional" : "forward";
+}
+
 function normalizeNode(
   input: unknown,
   index: number,
@@ -213,6 +234,7 @@ function normalizeEdge(
 
   const style = isObject(input.style) ? input.style : {};
   const routing = isObject(input.routing) ? input.routing : {};
+  const direction = normalizeEdgeDirection(input.direction);
 
   return {
     id: asString(input.id, createFlowId("edge")),
@@ -225,6 +247,7 @@ function normalizeEdge(
     type: normalizeEdgeType(input.type),
     stroke: normalizeStroke(input.stroke),
     hasArrow: asBoolean(input.hasArrow, input.type !== "no-arrow"),
+    direction: direction === "bidirectional" ? direction : undefined,
     style: {
       stroke: asString(style.stroke, DEFAULT_EDGE_STYLE.stroke),
       strokeWidth: asNumber(style.strokeWidth, DEFAULT_EDGE_STYLE.strokeWidth),
@@ -247,8 +270,8 @@ function normalizeEdge(
 
 function normalizeHandle(input: unknown): FlowHandlePosition {
   const handle = asString(input, "auto");
-  return handle === "top" || handle === "right" || handle === "bottom" || handle === "left"
-    ? handle
+  return VALID_HANDLE_POSITIONS.has(handle as FlowHandlePosition)
+    ? (handle as FlowHandlePosition)
     : "auto";
 }
 

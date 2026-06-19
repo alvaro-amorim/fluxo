@@ -73,6 +73,10 @@ const edgeTypes: EdgeTypes = { fluxo: FluxoEdge };
 
 const DEFAULT_EDGE_STROKE = "#374151";
 const DUPLICATE_EDGE_STROKES = ["#2563eb", "#16a34a", "#ea580c", "#7c3aed", "#db2777", "#0891b2"];
+const DEFAULT_NEW_NODE_WIDTH = 180;
+const DEFAULT_NEW_NODE_HEIGHT = 80;
+const EDGE_LANE_STEP = 22;
+const MAX_EDGE_LANE_OFFSET = 72;
 
 function getNextEdgeStroke(existingEdges: Edge[], source: string, target: string) {
   const duplicateCount = existingEdges.filter(
@@ -85,6 +89,57 @@ function getNextEdgeStroke(existingEdges: Edge[], source: string, target: string
 }
 
 type FlowSnapshot = { nodes: Node[]; edges: Edge[] };
+
+function getUndirectedEdgeKey(edge: Pick<Edge, "source" | "target">) {
+  return [edge.source, edge.target].sort().join("::");
+}
+
+function applyVisualLaneOffsets(edges: Edge[]): Edge[] {
+  const groups = new Map<string, Edge[]>();
+
+  for (const edge of edges) {
+    if (edge.source === edge.target) continue;
+    const key = getUndirectedEdgeKey(edge);
+    groups.set(key, [...(groups.get(key) ?? []), edge]);
+  }
+
+  const laneByEdgeId = new Map<string, { index: number; count: number; offset: number }>();
+
+  for (const [key, group] of groups) {
+    if (group.length < 2) continue;
+
+    const [firstNodeId] = key.split("::");
+    const sortedGroup = [...group].sort((a, b) => a.id.localeCompare(b.id));
+    const laneCount = sortedGroup.length;
+    const step =
+      laneCount <= 1 ? 0 : Math.min(EDGE_LANE_STEP, (MAX_EDGE_LANE_OFFSET * 2) / (laneCount - 1));
+
+    for (const [index, edge] of sortedGroup.entries()) {
+      const centeredIndex = index - (laneCount - 1) / 2;
+      const directionSign = edge.source === firstNodeId ? 1 : -1;
+      laneByEdgeId.set(edge.id, {
+        index,
+        count: laneCount,
+        offset: centeredIndex * step * directionSign,
+      });
+    }
+  }
+
+  return edges.map((edge) => {
+    const lane = laneByEdgeId.get(edge.id);
+    if (!lane) return edge;
+
+    return {
+      ...edge,
+      data: {
+        ...((edge.data as Record<string, unknown> | undefined) ?? {}),
+        __visualLaneIndex: lane.index,
+        __visualLaneCount: lane.count,
+        __visualLaneOffset: lane.offset,
+      },
+    };
+  });
+}
 
 interface FlowEditorProps {
   project: FlowProject;
@@ -115,6 +170,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
       })),
     [nodes, compactView],
   );
+  const renderedEdges = useMemo<Edge[]>(() => applyVisualLaneOffsets(edges), [edges]);
 
   const [tool, setTool] = useState<Tool>("select");
   const [pendingConnectionSource, setPendingConnectionSource] = useState<string | null>(null);
@@ -282,6 +338,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           type: "orthogonal",
           stroke: "solid",
           hasArrow: true,
+          direction: "forward",
           style: {
             stroke: getNextEdgeStroke(edges, source, target),
             strokeWidth: 2,
@@ -328,6 +385,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           type: "orthogonal",
           stroke: "solid",
           hasArrow: true,
+          direction: "forward",
           style: {
             stroke: getNextEdgeStroke(edges, pendingConnectionSource, node.id),
             strokeWidth: 2,
@@ -354,7 +412,19 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     (atFlow?: { x: number; y: number }) => {
       snapshot();
       const id = `node-${Date.now()}`;
-      const pos = atFlow ?? { x: 200 + Math.random() * 100, y: 200 + Math.random() * 100 };
+      const flowPane = wrapperRef.current?.querySelector(".react-flow");
+      const bounds =
+        flowPane?.getBoundingClientRect() ?? wrapperRef.current?.getBoundingClientRect();
+      const visibleCenter = bounds
+        ? screenToFlowPosition({
+            x: bounds.left + bounds.width / 2,
+            y: bounds.top + bounds.height / 2,
+          })
+        : { x: 200 + Math.random() * 100, y: 200 + Math.random() * 100 };
+      const pos = atFlow ?? {
+        x: visibleCenter.x - DEFAULT_NEW_NODE_WIDTH / 2,
+        y: visibleCenter.y - DEFAULT_NEW_NODE_HEIGHT / 2,
+      };
       const data: FluxoNodeData = {
         shape: "rounded-rectangle",
         title: "Novo bloco",
@@ -363,13 +433,13 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         style: { ...DEFAULT_NODE_STYLE },
         icon: { type: "none", name: "", customSrc: null },
         semantic: { ...DEFAULT_SEMANTIC },
-        width: 180,
-        height: 80,
+        width: DEFAULT_NEW_NODE_WIDTH,
+        height: DEFAULT_NEW_NODE_HEIGHT,
         customFields: [],
       };
       setNodes((nds) => [...nds, { id, type: "fluxo", position: pos, data }]);
     },
-    [snapshot],
+    [screenToFlowPosition, snapshot],
   );
 
   const undo = useCallback(() => {
@@ -936,6 +1006,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
             type: data.lineType,
             stroke: data.stroke,
             hasArrow: data.hasArrow,
+            direction: data.direction,
             style: data.style ?? {
               stroke: "#374151",
               strokeWidth: 2,
@@ -1111,7 +1182,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
       >
         <ReactFlow
           nodes={renderedNodes}
-          edges={edges}
+          edges={renderedEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnectStart={onConnectStart}

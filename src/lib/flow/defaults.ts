@@ -103,6 +103,7 @@ export function createDefaultEdge(
     type: overrides.type ?? "orthogonal",
     stroke: (overrides.stroke ?? "solid") as EdgeStrokeType,
     hasArrow: overrides.hasArrow ?? true,
+    direction: overrides.direction,
     style: { ...DEFAULT_EDGE_STYLE, ...overrides.style },
     routing: { ...DEFAULT_EDGE_ROUTING, ...overrides.routing },
     semantic: { ...DEFAULT_EDGE_SEMANTIC, ...overrides.semantic },

@@ -35,6 +35,12 @@ export type VisualRouteSegment = {
   a: Point;
   b: Point;
 };
+type RouteEvaluation = {
+  points: Point[];
+  score: number;
+  intersects: number;
+  overlaps: number;
+};
 
 type HandleDescriptor = {
   id: PhysicalHandle;
@@ -388,39 +394,74 @@ export function routeAvoidingObstacles({
   targetObstacleId?: string;
 }): Point[] {
   const safeObstacles = obstacles.filter((obstacle) => obstacle.width > 0 && obstacle.height > 0);
-  const candidates = expandCandidatesWithNudges(
-    getObstacleRouteCandidates({
+  const nearbyOccupiedSegments = getNearbyOccupiedSegments(
+    occupiedSegments,
+    sourceClearance,
+    targetClearance,
+  );
+  const evaluationOptions = {
+    edgeId,
+    laneCenter,
+    obstacles: safeObstacles,
+    occupiedSegments: nearbyOccupiedSegments,
+    sourceObstacleId,
+    targetObstacleId,
+  };
+  const fastBest = getBestRouteCandidate(
+    getFastRouteCandidates({
       source,
       sourceClearance,
       laneCenter,
       targetClearance,
       target,
       useLaneCenter,
-      obstacles: safeObstacles,
-      occupiedSegments,
     }),
+    evaluationOptions,
   );
 
-  let best: { points: Point[]; score: number; intersects: number; overlaps: number } | null = null;
+  if (isPerfectRoute(fastBest)) return fastBest.points;
 
-  for (const candidate of candidates) {
-    const points = normalizePolyline(candidate);
-    const intersects = countPathObstacleIntersections(points, safeObstacles, {
-      sourceObstacleId,
-      targetObstacleId,
-    });
-    const overlaps = countRouteSegmentOverlaps(points, occupiedSegments, edgeId);
-    const score = scoreObstacleRoute(points, laneCenter, intersects, overlaps);
+  const candidates = getObstacleRouteCandidates({
+    source,
+    sourceClearance,
+    laneCenter,
+    targetClearance,
+    target,
+    useLaneCenter,
+    obstacles: safeObstacles,
+    occupiedSegments: nearbyOccupiedSegments,
+  });
+  const routedBest = getBestRouteCandidate(candidates, evaluationOptions);
+  if (isPerfectRoute(routedBest)) return routedBest.points;
 
-    if (
-      !best ||
-      intersects < best.intersects ||
-      (intersects === best.intersects && overlaps < best.overlaps) ||
-      (intersects === best.intersects && overlaps === best.overlaps && score < best.score)
-    ) {
-      best = { points, score, intersects, overlaps };
-    }
-  }
+  const overlapCandidates = getObstacleRouteCandidates({
+    source,
+    sourceClearance,
+    laneCenter,
+    targetClearance,
+    target,
+    useLaneCenter,
+    obstacles: safeObstacles,
+    occupiedSegments: nearbyOccupiedSegments,
+    includeOverlapVariants: true,
+  });
+  const overlapBest = getBestRouteCandidate(overlapCandidates, evaluationOptions);
+  if (isPerfectRoute(overlapBest)) return overlapBest.points;
+
+  const fallbackSeed = overlapBest?.points ?? routedBest?.points ?? fastBest?.points;
+  const nudgedBest = fallbackSeed
+    ? getBestRouteCandidate(
+        [
+          ...expandCandidatesWithNudges([fallbackSeed]),
+          ...expandCandidatePointNudges(fallbackSeed),
+        ],
+        evaluationOptions,
+      )
+    : null;
+  const best = [fastBest, routedBest, overlapBest, nudgedBest].reduce<RouteEvaluation | null>(
+    (currentBest, candidate) => getBetterRoute(currentBest, candidate),
+    null,
+  );
 
   return best?.points ?? normalizePolyline([source, sourceClearance, targetClearance, target]);
 }
@@ -781,6 +822,126 @@ function normalizePolyline(points: Point[]) {
   });
 }
 
+function getFastRouteCandidates({
+  source,
+  sourceClearance,
+  laneCenter,
+  targetClearance,
+  target,
+  useLaneCenter,
+}: {
+  source: Point;
+  sourceClearance: Point;
+  laneCenter: Point;
+  targetClearance: Point;
+  target: Point;
+  useLaneCenter: boolean;
+}) {
+  const withEndpoints = (middle: Point[]) => [
+    source,
+    sourceClearance,
+    ...middle,
+    targetClearance,
+    target,
+  ];
+  const candidates = [
+    withEndpoints([{ x: targetClearance.x, y: sourceClearance.y }]),
+    withEndpoints([{ x: sourceClearance.x, y: targetClearance.y }]),
+  ];
+
+  if (useLaneCenter) {
+    candidates.unshift(
+      withEndpoints([
+        { x: laneCenter.x, y: sourceClearance.y },
+        { x: laneCenter.x, y: targetClearance.y },
+      ]),
+      withEndpoints([
+        { x: sourceClearance.x, y: laneCenter.y },
+        { x: targetClearance.x, y: laneCenter.y },
+      ]),
+    );
+  }
+
+  return candidates;
+}
+
+function getBestRouteCandidate(
+  candidates: Point[][],
+  {
+    edgeId,
+    laneCenter,
+    obstacles,
+    occupiedSegments,
+    sourceObstacleId,
+    targetObstacleId,
+  }: {
+    edgeId?: string;
+    laneCenter: Point;
+    obstacles: VisualObstacleRect[];
+    occupiedSegments: VisualRouteSegment[];
+    sourceObstacleId?: string;
+    targetObstacleId?: string;
+  },
+) {
+  let best: RouteEvaluation | null = null;
+
+  for (const candidate of candidates) {
+    const points = normalizePolyline(candidate);
+    const intersects = countPathObstacleIntersections(points, obstacles, {
+      sourceObstacleId,
+      targetObstacleId,
+    });
+    const overlaps = countRouteSegmentOverlaps(points, occupiedSegments, edgeId);
+    const evaluated = {
+      points,
+      intersects,
+      overlaps,
+      score: scoreObstacleRoute(points, laneCenter, intersects, overlaps),
+    };
+    best = getBetterRoute(best, evaluated);
+  }
+
+  return best;
+}
+
+function getBetterRoute(current: RouteEvaluation | null, candidate: RouteEvaluation | null) {
+  if (!candidate) return current;
+  if (!current) return candidate;
+  if (candidate.intersects !== current.intersects) {
+    return candidate.intersects < current.intersects ? candidate : current;
+  }
+  if (candidate.overlaps !== current.overlaps) {
+    return candidate.overlaps < current.overlaps ? candidate : current;
+  }
+  return candidate.score < current.score ? candidate : current;
+}
+
+function isPerfectRoute(route: RouteEvaluation | null): route is RouteEvaluation {
+  return Boolean(route && route.intersects === 0 && route.overlaps === 0);
+}
+
+function getNearbyOccupiedSegments(
+  occupiedSegments: VisualRouteSegment[],
+  source: Point,
+  target: Point,
+) {
+  const margin = 120;
+  const left = Math.min(source.x, target.x) - margin;
+  const right = Math.max(source.x, target.x) + margin;
+  const top = Math.min(source.y, target.y) - margin;
+  const bottom = Math.max(source.y, target.y) + margin;
+
+  return occupiedSegments.filter((segment) => {
+    const segmentLeft = Math.min(segment.a.x, segment.b.x);
+    const segmentRight = Math.max(segment.a.x, segment.b.x);
+    const segmentTop = Math.min(segment.a.y, segment.b.y);
+    const segmentBottom = Math.max(segment.a.y, segment.b.y);
+    return (
+      segmentRight >= left && segmentLeft <= right && segmentBottom >= top && segmentTop <= bottom
+    );
+  });
+}
+
 function getObstacleRouteCandidates({
   source,
   sourceClearance,
@@ -790,6 +951,7 @@ function getObstacleRouteCandidates({
   useLaneCenter,
   obstacles,
   occupiedSegments,
+  includeOverlapVariants = false,
 }: {
   source: Point;
   sourceClearance: Point;
@@ -799,12 +961,12 @@ function getObstacleRouteCandidates({
   useLaneCenter: boolean;
   obstacles: VisualObstacleRect[];
   occupiedSegments: VisualRouteSegment[];
+  includeOverlapVariants?: boolean;
 }): Point[][] {
   const start = sourceClearance;
   const end = targetClearance;
   const candidates: Point[][] = [];
   const withEndpoints = (middle: Point[]) => [source, start, ...middle, end, target];
-  const shouldAvoidOccupiedSegments = occupiedSegments.length > 0;
   const horizontalLaneNudge = clampRouteNudge(laneCenter.y - (start.y + end.y) / 2);
   const verticalLaneNudge = clampRouteNudge(laneCenter.x - (start.x + end.x) / 2);
 
@@ -832,7 +994,7 @@ function getObstacleRouteCandidates({
       laneCenter.y,
       start.y + verticalLaneNudge,
       end.y + verticalLaneNudge,
-      ...getOccupiedHorizontalCorridors(occupiedSegments),
+      ...getClosestCorridorValues(getOccupiedHorizontalCorridors(occupiedSegments), start.y, end.y),
       ...obstacles.flatMap((obstacle) => [
         obstacle.top - OBSTACLE_ROUTE_GAP,
         obstacle.bottom + OBSTACLE_ROUTE_GAP,
@@ -850,7 +1012,7 @@ function getObstacleRouteCandidates({
       laneCenter.x,
       start.x + horizontalLaneNudge,
       end.x + horizontalLaneNudge,
-      ...getOccupiedVerticalCorridors(occupiedSegments),
+      ...getClosestCorridorValues(getOccupiedVerticalCorridors(occupiedSegments), start.x, end.x),
       ...obstacles.flatMap((obstacle) => [
         obstacle.left - OBSTACLE_ROUTE_GAP,
         obstacle.right + OBSTACLE_ROUTE_GAP,
@@ -869,11 +1031,10 @@ function getObstacleRouteCandidates({
         { x: end.x, y },
       ]),
     );
-    if (shouldAvoidOccupiedSegments) {
+    if (includeOverlapVariants) {
       candidates.push(...getOffsetHorizontalCandidates(withEndpoints, start, end, y));
       candidates.push(...getSkewedHorizontalCandidates(withEndpoints, start, end, y));
     }
-
     if (Math.abs(horizontalLaneNudge) >= 4) {
       candidates.push(
         withEndpoints([
@@ -893,11 +1054,10 @@ function getObstacleRouteCandidates({
         { x, y: end.y },
       ]),
     );
-    if (shouldAvoidOccupiedSegments) {
+    if (includeOverlapVariants) {
       candidates.push(...getOffsetVerticalCandidates(withEndpoints, start, end, x));
       candidates.push(...getSkewedVerticalCandidates(withEndpoints, start, end, x));
     }
-
     if (Math.abs(verticalLaneNudge) >= 4) {
       candidates.push(
         withEndpoints([
@@ -971,7 +1131,6 @@ function getSkewedHorizontalCandidates(
   y: number,
 ) {
   const midpointX = (start.x + end.x) / 2;
-
   return getRouteSkews().map((skew) =>
     withEndpoints([
       { x: start.x, y },
@@ -988,7 +1147,6 @@ function getSkewedVerticalCandidates(
   x: number,
 ) {
   const midpointY = (start.y + end.y) / 2;
-
   return getRouteSkews().map((skew) =>
     withEndpoints([
       { x, y: start.y },
@@ -1000,6 +1158,27 @@ function getSkewedVerticalCandidates(
 
 function getRouteSkews() {
   return [6, -6, 10, -10, 14, -14];
+}
+
+function expandCandidatePointNudges(candidate: Point[]) {
+  const expanded: Point[][] = [];
+
+  for (let index = 1; index < candidate.length - 1; index += 1) {
+    for (const nudge of getRouteSkews()) {
+      expanded.push(
+        candidate.map((point, pointIndex) =>
+          pointIndex === index ? { x: point.x + nudge, y: point.y } : point,
+        ),
+      );
+      expanded.push(
+        candidate.map((point, pointIndex) =>
+          pointIndex === index ? { x: point.x, y: point.y + nudge } : point,
+        ),
+      );
+    }
+  }
+
+  return expanded;
 }
 
 function getOccupiedVerticalCorridors(occupiedSegments: VisualRouteSegment[]) {
@@ -1059,9 +1238,16 @@ function clampRouteNudge(value: number) {
 
 function getCorridorValues(values: number[], start: number, end: number) {
   const midpoint = (start + end) / 2;
+  return [...new Set(values.filter(Number.isFinite).map((value) => Math.round(value)))].sort(
+    (a, b) => Math.abs(a - midpoint) - Math.abs(b - midpoint),
+  );
+}
+
+function getClosestCorridorValues(values: number[], start: number, end: number) {
+  const midpoint = (start + end) / 2;
   return [...new Set(values.filter(Number.isFinite).map((value) => Math.round(value)))]
     .sort((a, b) => Math.abs(a - midpoint) - Math.abs(b - midpoint))
-    .slice(0, 48);
+    .slice(0, 24);
 }
 
 function getOuterTop(obstacles: VisualObstacleRect[], start: Point, end: Point) {

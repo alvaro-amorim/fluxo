@@ -52,7 +52,11 @@ import {
 } from "@/lib/flow/serialization";
 import { exportFlowPng } from "@/lib/export/exportPng";
 import { setCurrentProject, upsertProject } from "@/lib/flow/store";
-import { calculateAutoLayout } from "@/lib/flow/layout";
+import {
+  calculateAutoLayout,
+  findNearestFreeNodePosition,
+  resolveNodeCollisions,
+} from "@/lib/flow/layout";
 import {
   applySmartHandlesToReactFlowEdges,
   getNodeObstacleRects,
@@ -166,6 +170,7 @@ function getNodeConnectionLoads(edges: Edge[]): Map<string, NodeConnectionLoad> 
 function expandNodesForConnectionLoad(nodes: Node[], edges: Edge[]) {
   const loads = getNodeConnectionLoads(edges);
   let changed = false;
+  const expandedNodeIds: string[] = [];
 
   const nextNodes = nodes.map((node) => {
     const load = loads.get(node.id);
@@ -188,6 +193,7 @@ function expandNodesForConnectionLoad(nodes: Node[], edges: Edge[]) {
 
     if (nextWidth === currentWidth && nextHeight === currentHeight) return node;
     changed = true;
+    expandedNodeIds.push(node.id);
 
     return {
       ...node,
@@ -203,7 +209,7 @@ function expandNodesForConnectionLoad(nodes: Node[], edges: Edge[]) {
     };
   });
 
-  return changed ? nextNodes : nodes;
+  return changed ? resolveNodeCollisions(nextNodes, expandedNodeIds) : nodes;
 }
 
 function applyVisualLaneOffsets(edges: Edge[]): Edge[] {
@@ -1048,24 +1054,43 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     startGeometryInteraction();
   }, [snapshot, startGeometryInteraction]);
 
-  const onNodeDragStop = useCallback(() => {
-    finishGeometryInteraction(nodesRef.current);
-  }, [finishGeometryInteraction]);
+  const onNodeDragStop = useCallback(
+    (_: React.MouseEvent, draggedNode: Node) => {
+      const currentNodes = nodesRef.current;
+      const resolvedNodes = resolveNodeCollisions(currentNodes, [draggedNode.id], {
+        snapToGrid: snapOn,
+        gridSize: 16,
+      });
+      nodesRef.current = resolvedNodes;
+      if (resolvedNodes !== currentNodes) setNodes(resolvedNodes);
+      finishGeometryInteraction(resolvedNodes);
+    },
+    [finishGeometryInteraction, snapOn],
+  );
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
       const resizeStarted = changes.some((change) => isResizeChange(change, true));
       const resizeFinished = changes.some((change) => isResizeChange(change, false));
+      const resizedNodeIds = changes.flatMap((change) =>
+        isResizeChange(change, false) ? [change.id] : [],
+      );
 
       if (resizeStarted) startGeometryInteraction();
 
-      const nextNodes = applyNodeChanges(changes, nodesRef.current);
+      const changedNodes = applyNodeChanges(changes, nodesRef.current);
+      const nextNodes = resizeFinished
+        ? resolveNodeCollisions(changedNodes, resizedNodeIds, {
+            snapToGrid: snapOn,
+            gridSize: 16,
+          })
+        : changedNodes;
       nodesRef.current = nextNodes;
       setNodes(nextNodes);
 
       if (resizeFinished) finishGeometryInteraction(nextNodes);
     },
-    [finishGeometryInteraction, startGeometryInteraction],
+    [finishGeometryInteraction, snapOn, startGeometryInteraction],
   );
 
   const onEdgesChange = useCallback(
@@ -1244,9 +1269,16 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         height: DEFAULT_NEW_NODE_HEIGHT,
         customFields: [],
       };
-      setNodes((nds) => [...nds, { id, type: "fluxo", position: pos, data }]);
+      const newNode: Node = { id, type: "fluxo", position: pos, data };
+      setNodes((currentNodes) => {
+        const position = findNearestFreeNodePosition(newNode, currentNodes, {
+          snapToGrid: snapOn,
+          gridSize: 16,
+        });
+        return [...currentNodes, { ...newNode, position }];
+      });
     },
-    [screenToFlowPosition, snapshot],
+    [screenToFlowPosition, snapOn, snapshot],
   );
 
   const undo = useCallback(() => {
@@ -1342,12 +1374,25 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           }) satisfies Edge,
       );
 
-    setNodes((nds) => [...nds.map((n) => ({ ...n, selected: false })), ...duplicatedNodes]);
+    let nextNodes = nodes.map((node) => ({ ...node, selected: false }));
+    const positionedDuplicatedNodes = duplicatedNodes.map((node) => {
+      const positionedNode = {
+        ...node,
+        position: findNearestFreeNodePosition(node, nextNodes, {
+          snapToGrid: snapOn,
+          gridSize: 16,
+        }),
+      };
+      nextNodes = [...nextNodes, positionedNode];
+      return positionedNode;
+    });
+
+    setNodes(nextNodes);
     setEdges((eds) => [...eds.map((e) => ({ ...e, selected: false })), ...duplicatedEdges]);
-    setSelectedNode(duplicatedNodes[0] ?? null);
+    setSelectedNode(positionedDuplicatedNodes[0] ?? null);
     setSelectedEdge(null);
     setPendingConnectionSource(null);
-  }, [edges, nodes, selectedNode?.id, snapshot]);
+  }, [edges, nodes, selectedNode?.id, snapOn, snapshot]);
 
   const selectAll = useCallback(() => {
     setNodes((nds) => nds.map((n) => ({ ...n, selected: true })));

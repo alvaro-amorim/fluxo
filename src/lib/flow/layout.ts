@@ -10,6 +10,13 @@ export type AutoLayoutOptions = {
   startY?: number;
 };
 
+export type NodeCollisionOptions = {
+  padding?: number;
+  snapToGrid?: boolean;
+  gridSize?: number;
+  maxRings?: number;
+};
+
 const DEFAULT_OPTIONS: Required<AutoLayoutOptions> = {
   direction: "vertical",
   layerGap: 180,
@@ -17,6 +24,130 @@ const DEFAULT_OPTIONS: Required<AutoLayoutOptions> = {
   startX: 120,
   startY: 100,
 };
+
+const DEFAULT_COLLISION_OPTIONS: Required<NodeCollisionOptions> = {
+  padding: 20,
+  snapToGrid: false,
+  gridSize: 16,
+  maxRings: 96,
+};
+
+type NodeRect = {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+};
+
+export function resolveNodeCollisions(
+  nodes: Node[],
+  nodeIds: Iterable<string>,
+  options: NodeCollisionOptions = {},
+) {
+  let resolvedNodes = nodes;
+
+  for (const nodeId of nodeIds) {
+    const node = resolvedNodes.find((candidate) => candidate.id === nodeId);
+    if (!node) continue;
+
+    const position = findNearestFreeNodePosition(node, resolvedNodes, options);
+    if (position.x === node.position.x && position.y === node.position.y) continue;
+
+    resolvedNodes = resolvedNodes.map((candidate) =>
+      candidate.id === nodeId ? { ...candidate, position } : candidate,
+    );
+  }
+
+  return resolvedNodes;
+}
+
+export function findNearestFreeNodePosition(
+  node: Node,
+  nodes: Node[],
+  options: NodeCollisionOptions = {},
+) {
+  const resolved = { ...DEFAULT_COLLISION_OPTIONS, ...options };
+  const obstacles = nodes.filter((candidate) => candidate.id !== node.id);
+  const desired = snapPosition(node.position, resolved);
+
+  if (isPositionFree(node, desired, obstacles, resolved.padding)) return desired;
+
+  const tested = new Set<string>();
+  const step = resolved.snapToGrid ? resolved.gridSize : 16;
+  const directions = [
+    { x: 1, y: 0 },
+    { x: -1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 0, y: -1 },
+    { x: 1, y: 1 },
+    { x: -1, y: 1 },
+    { x: 1, y: -1 },
+    { x: -1, y: -1 },
+  ];
+
+  for (let ring = 1; ring <= resolved.maxRings; ring += 1) {
+    const distance = ring * step;
+
+    for (const direction of directions) {
+      const candidate = snapPosition(
+        {
+          x: desired.x + direction.x * distance,
+          y: desired.y + direction.y * distance,
+        },
+        resolved,
+      );
+      const key = `${candidate.x}:${candidate.y}`;
+      if (tested.has(key)) continue;
+      tested.add(key);
+
+      if (isPositionFree(node, candidate, obstacles, resolved.padding)) return candidate;
+    }
+  }
+
+  return desired;
+}
+
+function isPositionFree(
+  node: Node,
+  position: { x: number; y: number },
+  nodes: Node[],
+  padding: number,
+) {
+  const candidateRect = getNodeRect(node, position, padding);
+  return nodes.every(
+    (obstacle) => !rectsOverlap(candidateRect, getNodeRect(obstacle, obstacle.position, padding)),
+  );
+}
+
+function getNodeRect(node: Node, position: { x: number; y: number }, padding: number): NodeRect {
+  const size = getNodeSize(node);
+  const inset = padding / 2;
+
+  return {
+    left: position.x - inset,
+    right: position.x + size.width + inset,
+    top: position.y - inset,
+    bottom: position.y + size.height + inset,
+  };
+}
+
+function rectsOverlap(first: NodeRect, second: NodeRect) {
+  return (
+    first.left < second.right &&
+    first.right > second.left &&
+    first.top < second.bottom &&
+    first.bottom > second.top
+  );
+}
+
+function snapPosition(position: { x: number; y: number }, options: Required<NodeCollisionOptions>) {
+  if (!options.snapToGrid) return position;
+
+  return {
+    x: Math.round(position.x / options.gridSize) * options.gridSize,
+    y: Math.round(position.y / options.gridSize) * options.gridSize,
+  };
+}
 
 export function calculateAutoLayout(
   nodes: Node[],

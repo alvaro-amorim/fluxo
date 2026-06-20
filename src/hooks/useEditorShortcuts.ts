@@ -24,7 +24,7 @@ export type EditorShortcutId =
   | "editor.escape"
   | "editor.help";
 
-export type EditorShortcutGroup = "Ferramentas" | "Organiza??o" | "Visualiza??o" | "Arquivo";
+export type EditorShortcutGroup = "Ferramentas" | "Organização" | "Visualização" | "Arquivo";
 
 export type EditorShortcutDefinition = {
   id: EditorShortcutId;
@@ -53,28 +53,28 @@ export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
   {
     id: "tool.color",
     group: "Ferramentas",
-    label: "Cor da sele??o",
+    label: "Cor da seleção",
     display: "K",
     key: "k",
   },
   {
     id: "tool.line",
     group: "Ferramentas",
-    label: "Linha / converter sele??o",
+    label: "Linha / converter seleção",
     display: "L",
     key: "l",
   },
   {
     id: "tool.arrow",
     group: "Ferramentas",
-    label: "Seta / converter sele??o",
+    label: "Seta / converter seleção",
     display: "A",
     key: "a",
   },
   { id: "tool.connect", group: "Ferramentas", label: "Conectar", display: "C", key: "c" },
   {
     id: "layout.organize",
-    group: "Organiza??o",
+    group: "Organização",
     label: "Organizar fluxo",
     display: "Alt + L",
     key: "l",
@@ -82,7 +82,7 @@ export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
   },
   {
     id: "history.undo",
-    group: "Organiza??o",
+    group: "Organização",
     label: "Desfazer",
     display: "Ctrl + Z",
     key: "z",
@@ -90,7 +90,7 @@ export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
   },
   {
     id: "history.redo",
-    group: "Organiza??o",
+    group: "Organização",
     label: "Refazer",
     display: "Ctrl + Y / Ctrl + Shift + Z",
     key: "y",
@@ -98,15 +98,15 @@ export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
   },
   {
     id: "selection.duplicate",
-    group: "Organiza??o",
-    label: "Duplicar sele??o",
+    group: "Organização",
+    label: "Duplicar seleção",
     display: "Ctrl + D",
     key: "d",
     primary: true,
   },
   {
     id: "selection.all",
-    group: "Organiza??o",
+    group: "Organização",
     label: "Selecionar tudo",
     display: "Ctrl + A",
     key: "a",
@@ -114,25 +114,25 @@ export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
   },
   {
     id: "selection.delete",
-    group: "Organiza??o",
-    label: "Excluir sele??o",
+    group: "Organização",
+    label: "Excluir seleção",
     display: "Delete",
     key: "delete",
   },
-  { id: "view.grid", group: "Visualiza??o", label: "Ligar/desligar grid", display: "G", key: "g" },
-  { id: "view.snap", group: "Visualiza??o", label: "Ligar/desligar snap", display: "S", key: "s" },
+  { id: "view.grid", group: "Visualização", label: "Ligar/desligar grid", display: "G", key: "g" },
+  { id: "view.snap", group: "Visualização", label: "Ligar/desligar snap", display: "S", key: "s" },
   {
     id: "view.fit",
-    group: "Visualiza??o",
-    label: "Ajustar ? tela",
+    group: "Visualização",
+    label: "Ajustar à tela",
     display: "Ctrl + 0",
     key: "0",
     primary: true,
   },
   {
     id: "view.presentation",
-    group: "Visualiza??o",
-    label: "Modo apresenta??o",
+    group: "Visualização",
+    label: "Modo apresentação",
     display: "Shift + P",
     key: "p",
     shift: true,
@@ -163,7 +163,7 @@ export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
   },
   {
     id: "editor.escape",
-    group: "Organiza??o",
+    group: "Organização",
     label: "Cancelar / fechar",
     display: "Esc",
     key: "escape",
@@ -172,7 +172,7 @@ export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
   },
   {
     id: "editor.help",
-    group: "Visualiza??o",
+    group: "Visualização",
     label: "Mostrar atalhos",
     display: "?",
     key: "?",
@@ -182,7 +182,7 @@ export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
 
 const REDO_ALTERNATIVE: EditorShortcutDefinition = {
   id: "history.redo",
-  group: "Organiza??o",
+  group: "Organização",
   label: "Refazer",
   display: "Ctrl + Shift + Z",
   key: "z",

@@ -85,6 +85,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useEditorShortcuts, type EditorShortcutActions } from "@/hooks/useEditorShortcuts";
 
 const nodeTypes: NodeTypes = { fluxo: FluxoNode };
 const edgeTypes: EdgeTypes = { fluxo: FluxoEdge };
@@ -1589,115 +1590,67 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     [persistProject, resolveAutoEdges, snapshot],
   );
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
-      )
-        return;
+  const activateTool = useCallback(
+    (nextTool: Tool) => {
+      setTool(nextTool);
+      if (nextTool === "block") addBlock();
+    },
+    [addBlock],
+  );
 
-      const ctrl = e.ctrlKey || e.metaKey;
-      const key = e.key.toLowerCase();
-
-      if (ctrl && key === "s") {
-        e.preventDefault();
-        exportJson();
-        return;
-      }
-      if (ctrl && key === "e") {
-        e.preventDefault();
-        exportJson();
-        return;
-      }
-      if (ctrl && key === "o") {
-        e.preventDefault();
-        triggerImport();
-        return;
-      }
-      if (ctrl && key === "p") {
-        e.preventDefault();
-        void exportPng();
-        return;
-      }
-      if (ctrl && key === "l") {
-        e.preventDefault();
-        organize("horizontal");
-        return;
-      }
-      if (ctrl && key === "z") {
-        e.preventDefault();
-        undo();
-        return;
-      }
-      if (ctrl && key === "y") {
-        e.preventDefault();
-        redo();
-        return;
-      }
-      if (ctrl && key === "d") {
-        e.preventDefault();
-        duplicateSelection();
-        return;
-      }
-      if (ctrl && key === "a") {
-        e.preventDefault();
-        selectAll();
-        return;
-      }
-      if (ctrl && e.key === "0") {
-        e.preventDefault();
-        fitView({ padding: 0.2 });
-        return;
-      }
-      if (e.key === "Delete" || e.key === "Backspace") {
-        e.preventDefault();
-        deleteSelection();
-        return;
-      }
-      if (e.key === "Escape") {
+  const shortcutActions = useMemo<EditorShortcutActions>(
+    () => ({
+      "tool.select": () => activateTool("select"),
+      "tool.block": () => activateTool("block"),
+      "tool.shape": () => activateTool("shape"),
+      "tool.line": () => activateTool("line"),
+      "tool.arrow": () => activateTool("arrow"),
+      "tool.connect": () => activateTool("connect"),
+      "tool.text": () => activateTool("text"),
+      "layout.organize": () => organize("horizontal"),
+      "history.undo": undo,
+      "history.redo": redo,
+      "selection.duplicate": duplicateSelection,
+      "selection.all": selectAll,
+      "selection.delete": deleteSelection,
+      "view.grid": () => setGridOn((value) => !value),
+      "view.snap": () => setSnapOn((value) => !value),
+      "view.fit": () => fitView({ padding: 0.2 }),
+      "view.presentation": () => setPresentation((value) => !value),
+      "file.exportFlow": exportJson,
+      "file.exportPng": () => void exportPng(),
+      "file.importFlow": triggerImport,
+      "editor.escape": () => {
         setSelectedNode(null);
         setSelectedEdge(null);
         setNodeModalOpen(false);
         setEdgeModalOpen(false);
+        setHelpOpen(false);
+        setPresentation(false);
         setConnectionState(null);
         setPendingConnectionSource(null);
-        return;
-      }
-      if (e.key === "F11") {
-        e.preventDefault();
-        setPresentation((v) => !v);
-        return;
-      }
+      },
+      "editor.help": () => setHelpOpen(true),
+    }),
+    [
+      activateTool,
+      deleteSelection,
+      duplicateSelection,
+      exportJson,
+      exportPng,
+      fitView,
+      organize,
+      redo,
+      selectAll,
+      triggerImport,
+      undo,
+    ],
+  );
 
-      if (key === "v") setTool("select");
-      else if (key === "b") addBlock();
-      else if (key === "f") setTool("shape");
-      else if (key === "l") setTool("line");
-      else if (key === "a") setTool("arrow");
-      else if (key === "c") setTool("connect");
-      else if (key === "t") setTool("text");
-      else if (key === "g") setGridOn((v) => !v);
-      else if (key === "s") setSnapOn((v) => !v);
-      else if (key === "?") setHelpOpen(true);
-    };
-
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [
-    addBlock,
-    deleteSelection,
-    duplicateSelection,
-    exportJson,
-    exportPng,
-    fitView,
-    organize,
-    redo,
-    selectAll,
-    triggerImport,
-    undo,
-  ]);
+  useEditorShortcuts({
+    actions: shortcutActions,
+    modalOpen: nodeModalOpen || edgeModalOpen || helpOpen,
+  });
 
   const onPaneClick = useCallback(
     (e: React.MouseEvent) => {
@@ -2118,7 +2071,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         mode={toolbarMode}
         onModeChange={setToolbarMode}
         tool={tool}
-        onToolChange={setTool}
+        onToolChange={activateTool}
         gridOn={gridOn}
         snapOn={snapOn}
         compactView={compactView}
@@ -2133,7 +2086,6 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         onImportJson={triggerImport}
         onFitView={() => fitView({ padding: 0.2 })}
         onPresentation={() => setPresentation(true)}
-        onAddBlock={() => addBlock()}
       />
 
       <NodePropertiesModal

@@ -22,6 +22,7 @@ import {
   Minimize2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EDITOR_SHORTCUT_BY_ID, type EditorShortcutId } from "@/hooks/useEditorShortcuts";
 
 export type Tool = "select" | "block" | "shape" | "line" | "arrow" | "connect" | "text";
 
@@ -44,18 +45,22 @@ export interface ToolbarProps {
   onImportJson: () => void;
   onFitView: () => void;
   onPresentation: () => void;
-  onAddBlock: () => void;
 }
 
-const tools: { id: Tool; label: string; icon: React.ElementType; shortcut: string }[] = [
-  { id: "select", label: "Selecionar", icon: MousePointer2, shortcut: "V" },
-  { id: "block", label: "Bloco", icon: Square, shortcut: "B" },
-  { id: "shape", label: "Forma", icon: Shapes, shortcut: "F" },
-  { id: "line", label: "Linha", icon: Minus, shortcut: "L" },
-  { id: "arrow", label: "Seta", icon: ArrowRight, shortcut: "A" },
-  { id: "connect", label: "Conectar", icon: Link2, shortcut: "C" },
-  { id: "text", label: "Texto", icon: Type, shortcut: "T" },
-];
+const tools: { id: Tool; label: string; icon: React.ElementType; shortcutId: EditorShortcutId }[] =
+  [
+    { id: "select", label: "Selecionar", icon: MousePointer2, shortcutId: "tool.select" },
+    { id: "block", label: "Bloco", icon: Square, shortcutId: "tool.block" },
+    { id: "shape", label: "Forma", icon: Shapes, shortcutId: "tool.shape" },
+    { id: "line", label: "Linha", icon: Minus, shortcutId: "tool.line" },
+    { id: "arrow", label: "Seta", icon: ArrowRight, shortcutId: "tool.arrow" },
+    { id: "connect", label: "Conectar", icon: Link2, shortcutId: "tool.connect" },
+    { id: "text", label: "Texto", icon: Type, shortcutId: "tool.text" },
+  ];
+
+function getShortcut(id: EditorShortcutId) {
+  return EDITOR_SHORTCUT_BY_ID.get(id)?.display ?? "";
+}
 
 type DragState = {
   pointerX: number;
@@ -135,33 +140,45 @@ export function Toolbar(props: ToolbarProps) {
             active={props.tool === t.id}
             icon={t.icon}
             label={t.label}
-            shortcut={t.shortcut}
-            onClick={() => {
-              props.onToolChange(t.id);
-              if (t.id === "block") props.onAddBlock();
-            }}
+            shortcut={getShortcut(t.shortcutId)}
+            onClick={() => props.onToolChange(t.id)}
           />
         ))}
       </Section>
 
       <Section title="Organização">
-        <ToolRow icon={LayoutGrid} label="Organizar" shortcut="Ctrl+L" onClick={props.onOrganize} />
-        <ToolRow icon={Undo2} label="Desfazer" shortcut="Ctrl+Z" onClick={props.onUndo} />
-        <ToolRow icon={Redo2} label="Refazer" shortcut="Ctrl+Y" onClick={props.onRedo} />
+        <ToolRow
+          icon={LayoutGrid}
+          label="Organizar"
+          shortcut={getShortcut("layout.organize")}
+          onClick={props.onOrganize}
+        />
+        <ToolRow
+          icon={Undo2}
+          label="Desfazer"
+          shortcut={getShortcut("history.undo")}
+          onClick={props.onUndo}
+        />
+        <ToolRow
+          icon={Redo2}
+          label="Refazer"
+          shortcut={getShortcut("history.redo")}
+          onClick={props.onRedo}
+        />
       </Section>
 
       <Section title="Visualização">
         <ToolRow
           icon={Grid3x3}
           label="Grid"
-          shortcut="G"
+          shortcut={getShortcut("view.grid")}
           active={props.gridOn}
           onClick={props.onToggleGrid}
         />
         <ToolRow
           icon={Magnet}
           label="Snap"
-          shortcut="S"
+          shortcut={getShortcut("view.snap")}
           active={props.snapOn}
           onClick={props.onToggleSnap}
         />
@@ -175,13 +192,13 @@ export function Toolbar(props: ToolbarProps) {
         <ToolRow
           icon={Maximize2}
           label="Ajustar à tela"
-          shortcut="Ctrl+0"
+          shortcut={getShortcut("view.fit")}
           onClick={props.onFitView}
         />
         <ToolRow
           icon={Presentation}
           label="Apresentação"
-          shortcut="F11"
+          shortcut={getShortcut("view.presentation")}
           onClick={props.onPresentation}
         />
       </Section>
@@ -190,19 +207,19 @@ export function Toolbar(props: ToolbarProps) {
         <ToolRow
           icon={Download}
           label="Exportar .flow"
-          shortcut="Ctrl+E"
+          shortcut={getShortcut("file.exportFlow")}
           onClick={props.onExportJson}
         />
         <ToolRow
           icon={ImageIcon}
           label="Exportar PNG"
-          shortcut="Ctrl+P"
+          shortcut={getShortcut("file.exportPng")}
           onClick={props.onExportPng}
         />
         <ToolRow
           icon={Upload}
           label="Importar .flow"
-          shortcut="Ctrl+O"
+          shortcut={getShortcut("file.importFlow")}
           onClick={props.onImportJson}
         />
       </Section>

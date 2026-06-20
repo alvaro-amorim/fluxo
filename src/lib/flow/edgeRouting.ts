@@ -16,7 +16,7 @@ export type ManualRouteAxis = "x" | "y";
 export type ManualRoutePoint = { x: number; y: number };
 type Point = ManualRoutePoint;
 
-type Rect = {
+export type VisualObstacleRect = {
   id: string;
   x: number;
   y: number;
@@ -28,6 +28,12 @@ type Rect = {
   right: number;
   top: number;
   bottom: number;
+};
+type Rect = VisualObstacleRect;
+export type VisualRouteSegment = {
+  edgeId: string;
+  a: Point;
+  b: Point;
 };
 
 type HandleDescriptor = {
@@ -72,6 +78,9 @@ const OPPOSITE_SIDE: Record<HandleSide, HandleSide> = {
   bottom: "top",
   left: "right",
 };
+const DEFAULT_OBSTACLE_PADDING = 20;
+const OBSTACLE_ROUTE_GAP = 28;
+const FALLBACK_ROUTE_PENALTY = 100_000;
 
 export type SmartHandles = {
   sourceHandle: PhysicalHandle;
@@ -343,6 +352,88 @@ export function nudgeManualRoutePoints(
   return normalized.map((point) => ({
     x: point.x + delta.x,
     y: point.y + delta.y,
+  }));
+}
+
+export function getNodeObstacleRects(
+  nodes: Node[],
+  padding = DEFAULT_OBSTACLE_PADDING,
+): VisualObstacleRect[] {
+  return nodes.map((node) => inflateRect(reactFlowNodeToRect(node), padding));
+}
+
+export function routeAvoidingObstacles({
+  edgeId,
+  source,
+  sourceClearance,
+  laneCenter,
+  targetClearance,
+  target,
+  useLaneCenter,
+  obstacles,
+  occupiedSegments = [],
+  sourceObstacleId,
+  targetObstacleId,
+}: {
+  edgeId?: string;
+  source: Point;
+  sourceClearance: Point;
+  laneCenter: Point;
+  targetClearance: Point;
+  target: Point;
+  useLaneCenter: boolean;
+  obstacles: VisualObstacleRect[];
+  occupiedSegments?: VisualRouteSegment[];
+  sourceObstacleId?: string;
+  targetObstacleId?: string;
+}): Point[] {
+  const safeObstacles = obstacles.filter((obstacle) => obstacle.width > 0 && obstacle.height > 0);
+  const candidates = expandCandidatesWithNudges(
+    getObstacleRouteCandidates({
+      source,
+      sourceClearance,
+      laneCenter,
+      targetClearance,
+      target,
+      useLaneCenter,
+      obstacles: safeObstacles,
+      occupiedSegments,
+    }),
+  );
+
+  let best: { points: Point[]; score: number; intersects: number; overlaps: number } | null = null;
+
+  for (const candidate of candidates) {
+    const points = normalizePolyline(candidate);
+    const intersects = countPathObstacleIntersections(points, safeObstacles, {
+      sourceObstacleId,
+      targetObstacleId,
+    });
+    const overlaps = countRouteSegmentOverlaps(points, occupiedSegments, edgeId);
+    const score = scoreObstacleRoute(points, laneCenter, intersects, overlaps);
+
+    if (
+      !best ||
+      intersects < best.intersects ||
+      (intersects === best.intersects && overlaps < best.overlaps) ||
+      (intersects === best.intersects && overlaps === best.overlaps && score < best.score)
+    ) {
+      best = { points, score, intersects, overlaps };
+    }
+  }
+
+  return best?.points ?? normalizePolyline([source, sourceClearance, targetClearance, target]);
+}
+
+export function pathIntersectsAnyObstacle(points: Point[], obstacles: VisualObstacleRect[]) {
+  return countPathObstacleIntersections(points, obstacles) > 0;
+}
+
+export function toVisualRouteSegments(edgeId: string, points: Point[]): VisualRouteSegment[] {
+  return getSegments(points).map((segment) => ({
+    edgeId,
+    a: segment.a,
+    b: segment.b,
   }));
 }
 
@@ -690,6 +781,448 @@ function normalizePolyline(points: Point[]) {
   });
 }
 
+function getObstacleRouteCandidates({
+  source,
+  sourceClearance,
+  laneCenter,
+  targetClearance,
+  target,
+  useLaneCenter,
+  obstacles,
+  occupiedSegments,
+}: {
+  source: Point;
+  sourceClearance: Point;
+  laneCenter: Point;
+  targetClearance: Point;
+  target: Point;
+  useLaneCenter: boolean;
+  obstacles: VisualObstacleRect[];
+  occupiedSegments: VisualRouteSegment[];
+}): Point[][] {
+  const start = sourceClearance;
+  const end = targetClearance;
+  const candidates: Point[][] = [];
+  const withEndpoints = (middle: Point[]) => [source, start, ...middle, end, target];
+  const shouldAvoidOccupiedSegments = occupiedSegments.length > 0;
+  const horizontalLaneNudge = clampRouteNudge(laneCenter.y - (start.y + end.y) / 2);
+  const verticalLaneNudge = clampRouteNudge(laneCenter.x - (start.x + end.x) / 2);
+
+  if (useLaneCenter) {
+    candidates.push(
+      withEndpoints([
+        { x: laneCenter.x, y: start.y },
+        { x: laneCenter.x, y: end.y },
+      ]),
+    );
+    candidates.push(
+      withEndpoints([
+        { x: start.x, y: laneCenter.y },
+        { x: end.x, y: laneCenter.y },
+      ]),
+    );
+  }
+  candidates.push(withEndpoints([{ x: end.x, y: start.y }]));
+  candidates.push(withEndpoints([{ x: start.x, y: end.y }]));
+
+  const yCorridors = getCorridorValues(
+    [
+      start.y,
+      end.y,
+      laneCenter.y,
+      start.y + verticalLaneNudge,
+      end.y + verticalLaneNudge,
+      ...getOccupiedHorizontalCorridors(occupiedSegments),
+      ...obstacles.flatMap((obstacle) => [
+        obstacle.top - OBSTACLE_ROUTE_GAP,
+        obstacle.bottom + OBSTACLE_ROUTE_GAP,
+      ]),
+      getOuterTop(obstacles, start, end) - OBSTACLE_ROUTE_GAP,
+      getOuterBottom(obstacles, start, end) + OBSTACLE_ROUTE_GAP,
+    ],
+    start.y,
+    end.y,
+  );
+  const xCorridors = getCorridorValues(
+    [
+      start.x,
+      end.x,
+      laneCenter.x,
+      start.x + horizontalLaneNudge,
+      end.x + horizontalLaneNudge,
+      ...getOccupiedVerticalCorridors(occupiedSegments),
+      ...obstacles.flatMap((obstacle) => [
+        obstacle.left - OBSTACLE_ROUTE_GAP,
+        obstacle.right + OBSTACLE_ROUTE_GAP,
+      ]),
+      getOuterLeft(obstacles, start, end) - OBSTACLE_ROUTE_GAP,
+      getOuterRight(obstacles, start, end) + OBSTACLE_ROUTE_GAP,
+    ],
+    start.x,
+    end.x,
+  );
+
+  for (const y of yCorridors) {
+    candidates.push(
+      withEndpoints([
+        { x: start.x, y },
+        { x: end.x, y },
+      ]),
+    );
+    if (shouldAvoidOccupiedSegments) {
+      candidates.push(...getOffsetHorizontalCandidates(withEndpoints, start, end, y));
+      candidates.push(...getSkewedHorizontalCandidates(withEndpoints, start, end, y));
+    }
+
+    if (Math.abs(horizontalLaneNudge) >= 4) {
+      candidates.push(
+        withEndpoints([
+          { x: start.x + horizontalLaneNudge, y: start.y },
+          { x: start.x + horizontalLaneNudge, y },
+          { x: end.x + horizontalLaneNudge, y },
+          { x: end.x + horizontalLaneNudge, y: end.y },
+        ]),
+      );
+    }
+  }
+
+  for (const x of xCorridors) {
+    candidates.push(
+      withEndpoints([
+        { x, y: start.y },
+        { x, y: end.y },
+      ]),
+    );
+    if (shouldAvoidOccupiedSegments) {
+      candidates.push(...getOffsetVerticalCandidates(withEndpoints, start, end, x));
+      candidates.push(...getSkewedVerticalCandidates(withEndpoints, start, end, x));
+    }
+
+    if (Math.abs(verticalLaneNudge) >= 4) {
+      candidates.push(
+        withEndpoints([
+          { x: start.x, y: start.y + verticalLaneNudge },
+          { x, y: start.y + verticalLaneNudge },
+          { x, y: end.y + verticalLaneNudge },
+          { x: end.x, y: end.y + verticalLaneNudge },
+        ]),
+      );
+    }
+  }
+
+  for (const y of yCorridors.slice(0, 8)) {
+    for (const x of xCorridors.slice(0, 8)) {
+      candidates.push(
+        withEndpoints([
+          { x: start.x, y },
+          { x, y },
+          { x, y: end.y },
+        ]),
+      );
+      candidates.push(
+        withEndpoints([
+          { x, y: start.y },
+          { x, y },
+          { x: end.x, y },
+        ]),
+      );
+    }
+  }
+
+  return candidates;
+}
+
+function getOffsetHorizontalCandidates(
+  withEndpoints: (middle: Point[]) => Point[],
+  start: Point,
+  end: Point,
+  y: number,
+) {
+  return getRouteSkews().map((offset) =>
+    withEndpoints([
+      { x: start.x + offset, y: start.y },
+      { x: start.x + offset, y },
+      { x: end.x + offset, y },
+      { x: end.x + offset, y: end.y },
+    ]),
+  );
+}
+
+function getOffsetVerticalCandidates(
+  withEndpoints: (middle: Point[]) => Point[],
+  start: Point,
+  end: Point,
+  x: number,
+) {
+  return getRouteSkews().map((offset) =>
+    withEndpoints([
+      { x: start.x, y: start.y + offset },
+      { x, y: start.y + offset },
+      { x, y: end.y + offset },
+      { x: end.x, y: end.y + offset },
+    ]),
+  );
+}
+
+function getSkewedHorizontalCandidates(
+  withEndpoints: (middle: Point[]) => Point[],
+  start: Point,
+  end: Point,
+  y: number,
+) {
+  const midpointX = (start.x + end.x) / 2;
+
+  return getRouteSkews().map((skew) =>
+    withEndpoints([
+      { x: start.x, y },
+      { x: midpointX, y: y + skew },
+      { x: end.x, y },
+    ]),
+  );
+}
+
+function getSkewedVerticalCandidates(
+  withEndpoints: (middle: Point[]) => Point[],
+  start: Point,
+  end: Point,
+  x: number,
+) {
+  const midpointY = (start.y + end.y) / 2;
+
+  return getRouteSkews().map((skew) =>
+    withEndpoints([
+      { x, y: start.y },
+      { x: x + skew, y: midpointY },
+      { x, y: end.y },
+    ]),
+  );
+}
+
+function getRouteSkews() {
+  return [6, -6, 10, -10, 14, -14];
+}
+
+function getOccupiedVerticalCorridors(occupiedSegments: VisualRouteSegment[]) {
+  return occupiedSegments.flatMap((segment) => {
+    if (!isVerticalSegment(segment)) return [];
+    return getAdjacentCorridorValues(segment.a.x);
+  });
+}
+
+function getOccupiedHorizontalCorridors(occupiedSegments: VisualRouteSegment[]) {
+  return occupiedSegments.flatMap((segment) => {
+    if (!isHorizontalSegment(segment)) return [];
+    return getAdjacentCorridorValues(segment.a.y);
+  });
+}
+
+function getAdjacentCorridorValues(value: number) {
+  return [8, 12, 16, 20, 24].flatMap((gap) => [value - gap, value + gap]);
+}
+
+function expandCandidatesWithNudges(candidates: Point[][]) {
+  const nudges = [
+    { x: 12, y: 0 },
+    { x: -12, y: 0 },
+    { x: 18, y: 0 },
+    { x: -18, y: 0 },
+    { x: 0, y: 12 },
+    { x: 0, y: -12 },
+    { x: 0, y: 18 },
+    { x: 0, y: -18 },
+  ];
+  const expanded = [...candidates];
+
+  for (const candidate of candidates) {
+    if (candidate.length < 4) continue;
+
+    for (const nudge of nudges) {
+      expanded.push(
+        candidate.map((point, index) => {
+          if (index === 0 || index === candidate.length - 1) return point;
+          return {
+            x: point.x + nudge.x,
+            y: point.y + nudge.y,
+          };
+        }),
+      );
+    }
+  }
+
+  return expanded;
+}
+
+function clampRouteNudge(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(-72, Math.min(72, value));
+}
+
+function getCorridorValues(values: number[], start: number, end: number) {
+  const midpoint = (start + end) / 2;
+  return [...new Set(values.filter(Number.isFinite).map((value) => Math.round(value)))]
+    .sort((a, b) => Math.abs(a - midpoint) - Math.abs(b - midpoint))
+    .slice(0, 48);
+}
+
+function getOuterTop(obstacles: VisualObstacleRect[], start: Point, end: Point) {
+  return Math.min(start.y, end.y, ...obstacles.map((obstacle) => obstacle.top));
+}
+
+function getOuterBottom(obstacles: VisualObstacleRect[], start: Point, end: Point) {
+  return Math.max(start.y, end.y, ...obstacles.map((obstacle) => obstacle.bottom));
+}
+
+function getOuterLeft(obstacles: VisualObstacleRect[], start: Point, end: Point) {
+  return Math.min(start.x, end.x, ...obstacles.map((obstacle) => obstacle.left));
+}
+
+function getOuterRight(obstacles: VisualObstacleRect[], start: Point, end: Point) {
+  return Math.max(start.x, end.x, ...obstacles.map((obstacle) => obstacle.right));
+}
+
+function countPathObstacleIntersections(
+  points: Point[],
+  obstacles: VisualObstacleRect[],
+  options: { sourceObstacleId?: string; targetObstacleId?: string } = {},
+) {
+  let count = 0;
+  const segments = getSegments(points);
+
+  for (const [segmentIndex, segment] of segments.entries()) {
+    for (const obstacle of obstacles) {
+      if (
+        isControlledEndpointIntersection({
+          obstacleId: obstacle.id,
+          segmentIndex,
+          segmentCount: segments.length,
+          sourceObstacleId: options.sourceObstacleId,
+          targetObstacleId: options.targetObstacleId,
+        })
+      ) {
+        continue;
+      }
+
+      if (segmentIntersectsRect(segment, obstacle)) count += 1;
+    }
+  }
+
+  return count;
+}
+
+function isControlledEndpointIntersection({
+  obstacleId,
+  segmentIndex,
+  segmentCount,
+  sourceObstacleId,
+  targetObstacleId,
+}: {
+  obstacleId: string;
+  segmentIndex: number;
+  segmentCount: number;
+  sourceObstacleId?: string;
+  targetObstacleId?: string;
+}) {
+  if (sourceObstacleId && obstacleId === sourceObstacleId && segmentIndex === 0) {
+    return true;
+  }
+
+  if (targetObstacleId && obstacleId === targetObstacleId && segmentIndex === segmentCount - 1) {
+    return true;
+  }
+
+  return false;
+}
+
+function scoreObstacleRoute(
+  points: Point[],
+  laneCenter: Point,
+  intersects: number,
+  overlaps: number,
+) {
+  const length = getPathLength(points);
+  const bends = Math.max(0, points.length - 2);
+  const labelPoint = getPolylineMidpoint(points);
+  const laneDistance = Math.hypot(labelPoint.x - laneCenter.x, labelPoint.y - laneCenter.y);
+
+  return (
+    intersects * FALLBACK_ROUTE_PENALTY +
+    overlaps * 60_000 +
+    length +
+    bends * 28 +
+    laneDistance * 0.18
+  );
+}
+
+function countRouteSegmentOverlaps(
+  points: Point[],
+  occupiedSegments: VisualRouteSegment[],
+  edgeId?: string,
+) {
+  let count = 0;
+
+  for (const segment of getSegments(points)) {
+    for (const occupied of occupiedSegments) {
+      if (edgeId && occupied.edgeId === edgeId) continue;
+      if (visualSegmentsOverlap(segment, occupied)) count += 1;
+    }
+  }
+
+  return count;
+}
+
+function visualSegmentsOverlap(segment: Segment, occupied: VisualRouteSegment) {
+  const other = { a: occupied.a, b: occupied.b };
+
+  if (isHorizontalSegment(segment) && isHorizontalSegment(other)) {
+    if (Math.abs(segment.a.y - other.a.y) >= 4) return false;
+    return rangeOverlapLength(segment.a.x, segment.b.x, other.a.x, other.b.x) > 12;
+  }
+
+  if (isVerticalSegment(segment) && isVerticalSegment(other)) {
+    if (Math.abs(segment.a.x - other.a.x) >= 4) return false;
+    return rangeOverlapLength(segment.a.y, segment.b.y, other.a.y, other.b.y) > 12;
+  }
+
+  return false;
+}
+
+function rangeOverlapLength(a1: number, a2: number, b1: number, b2: number) {
+  const minA = Math.min(a1, a2);
+  const maxA = Math.max(a1, a2);
+  const minB = Math.min(b1, b2);
+  const maxB = Math.max(b1, b2);
+  return Math.max(0, Math.min(maxA, maxB) - Math.max(minA, minB));
+}
+
+function getPathLength(points: Point[]) {
+  return getSegments(points).reduce(
+    (total, segment) => total + Math.hypot(segment.b.x - segment.a.x, segment.b.y - segment.a.y),
+    0,
+  );
+}
+
+function getPolylineMidpoint(points: Point[]): Point {
+  if (points.length <= 0) return { x: 0, y: 0 };
+  if (points.length === 1) return points[0]!;
+
+  const totalLength = getPathLength(points);
+  let remaining = totalLength / 2;
+
+  for (const segment of getSegments(points)) {
+    const length = Math.hypot(segment.b.x - segment.a.x, segment.b.y - segment.a.y);
+    if (remaining <= length) {
+      const progress = length === 0 ? 0 : remaining / length;
+      return {
+        x: segment.a.x + (segment.b.x - segment.a.x) * progress,
+        y: segment.a.y + (segment.b.y - segment.a.y) * progress,
+      };
+    }
+    remaining -= length;
+  }
+
+  return points[points.length - 1]!;
+}
+
 function countPolylineIntersections(a: Point[], b: Point[]) {
   let count = 0;
 
@@ -997,7 +1530,7 @@ function pointInsideRect(point: Point, rect: Rect) {
   return point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
 }
 
-function padRect(rect: Rect, padding: number): Rect {
+function inflateRect(rect: Rect, padding: number): Rect {
   return createRect(
     rect.id,
     rect.x - padding,
@@ -1005,4 +1538,8 @@ function padRect(rect: Rect, padding: number): Rect {
     rect.width + padding * 2,
     rect.height + padding * 2,
   );
+}
+
+function padRect(rect: Rect, padding: number): Rect {
+  return inflateRect(rect, padding);
 }

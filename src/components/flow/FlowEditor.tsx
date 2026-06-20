@@ -53,7 +53,21 @@ import {
 import { exportFlowPng } from "@/lib/export/exportPng";
 import { setCurrentProject, upsertProject } from "@/lib/flow/store";
 import { calculateAutoLayout } from "@/lib/flow/layout";
-import { applySmartHandlesToReactFlowEdges } from "@/lib/flow/edgeRouting";
+import {
+  applySmartHandlesToReactFlowEdges,
+  getNodeObstacleRects,
+  routeAvoidingObstacles,
+  toVisualRouteSegments,
+  type VisualObstacleRect,
+  type VisualRouteSegment,
+} from "@/lib/flow/edgeRouting";
+import {
+  getDistributedConnectionPoint,
+  getRecommendedNodeSizeForConnections,
+  getShapeSideFromHandle,
+  type ShapeConnectionSide,
+  type ShapePoint,
+} from "@/lib/flow/shapeGeometry";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, HelpCircle, Palette, Presentation, X } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -77,6 +91,7 @@ const DEFAULT_NEW_NODE_WIDTH = 180;
 const DEFAULT_NEW_NODE_HEIGHT = 80;
 const EDGE_LANE_STEP = 22;
 const MAX_EDGE_LANE_OFFSET = 72;
+const EDGE_CLEARANCE = 36;
 
 function getNextEdgeStroke(existingEdges: Edge[], source: string, target: string) {
   const duplicateCount = existingEdges.filter(
@@ -89,9 +104,105 @@ function getNextEdgeStroke(existingEdges: Edge[], source: string, target: string
 }
 
 type FlowSnapshot = { nodes: Node[]; edges: Edge[] };
+type NodeConnectionLoad = {
+  incoming: number;
+  outgoing: number;
+  total: number;
+  sides: Record<ShapeConnectionSide, number>;
+};
+
+const EMPTY_SIDE_LOAD: Record<ShapeConnectionSide, number> = {
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+};
 
 function getUndirectedEdgeKey(edge: Pick<Edge, "source" | "target">) {
   return [edge.source, edge.target].sort().join("::");
+}
+
+function getHandleSide(handle: unknown): ShapeConnectionSide | null {
+  return getShapeSideFromHandle(typeof handle === "string" ? handle : null);
+}
+
+function getNodeConnectionLoads(edges: Edge[]): Map<string, NodeConnectionLoad> {
+  const loads = new Map<string, NodeConnectionLoad>();
+
+  const ensureLoad = (nodeId: string) => {
+    const existing = loads.get(nodeId);
+    if (existing) return existing;
+
+    const created = {
+      incoming: 0,
+      outgoing: 0,
+      total: 0,
+      sides: { ...EMPTY_SIDE_LOAD },
+    };
+    loads.set(nodeId, created);
+    return created;
+  };
+
+  for (const edge of edges) {
+    const data = edge.data as FluxoEdgeData | undefined;
+    const sourceLoad = ensureLoad(edge.source);
+    const targetLoad = ensureLoad(edge.target);
+    const sourceSide = getHandleSide(data?.sourceHandle ?? edge.sourceHandle);
+    const targetSide = getHandleSide(data?.targetHandle ?? edge.targetHandle);
+
+    sourceLoad.outgoing += 1;
+    sourceLoad.total += 1;
+    targetLoad.incoming += 1;
+    targetLoad.total += 1;
+
+    if (sourceSide) sourceLoad.sides[sourceSide] += 1;
+    if (targetSide) targetLoad.sides[targetSide] += 1;
+  }
+
+  return loads;
+}
+
+function expandNodesForConnectionLoad(nodes: Node[], edges: Edge[]) {
+  const loads = getNodeConnectionLoads(edges);
+  let changed = false;
+
+  const nextNodes = nodes.map((node) => {
+    const load = loads.get(node.id);
+    if (!load) return node;
+
+    const data = node.data as FluxoNodeData;
+    const currentWidth = data.width ?? DEFAULT_NEW_NODE_WIDTH;
+    const currentHeight = data.height ?? DEFAULT_NEW_NODE_HEIGHT;
+    const recommended = getRecommendedNodeSizeForConnections(
+      data.shape,
+      currentWidth,
+      currentHeight,
+      {
+        total: load.total,
+        sides: load.sides,
+      },
+    );
+    const nextWidth = Math.max(currentWidth, recommended.width);
+    const nextHeight = Math.max(currentHeight, recommended.height);
+
+    if (nextWidth === currentWidth && nextHeight === currentHeight) return node;
+    changed = true;
+
+    return {
+      ...node,
+      position: {
+        x: node.position.x - (nextWidth - currentWidth) / 2,
+        y: node.position.y - (nextHeight - currentHeight) / 2,
+      },
+      data: {
+        ...data,
+        width: nextWidth,
+        height: nextHeight,
+      },
+    };
+  });
+
+  return changed ? nextNodes : nodes;
 }
 
 function applyVisualLaneOffsets(edges: Edge[]): Edge[] {
@@ -141,6 +252,466 @@ function applyVisualLaneOffsets(edges: Edge[]): Edge[] {
   });
 }
 
+type VisualEndpointRole = "source" | "target";
+
+type VisualEndpoint = {
+  edge: Edge;
+  role: VisualEndpointRole;
+  node: Node;
+  side: ShapeConnectionSide;
+};
+
+function applyVisualEdgeMetadata(nodes: Node[], edges: Edge[]): Edge[] {
+  const edgesWithLanes = applyVisualLaneOffsets(edges);
+  const edgesWithAnchors = applyVisualAnchorSlots(nodes, edgesWithLanes);
+  const edgesWithObstacles = applyVisualObstacleRects(nodes, edgesWithAnchors);
+  return applyVisualRoutePoints(edgesWithObstacles);
+}
+
+function applyVisualAnchorSlots(nodes: Node[], edges: Edge[]): Edge[] {
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const endpointGroups = new Map<string, VisualEndpoint[]>();
+
+  const addEndpoint = (endpoint: VisualEndpoint) => {
+    const key = `${endpoint.node.id}::${endpoint.side}`;
+    endpointGroups.set(key, [...(endpointGroups.get(key) ?? []), endpoint]);
+  };
+
+  for (const edge of edges) {
+    const sourceNode = nodeById.get(edge.source);
+    const targetNode = nodeById.get(edge.target);
+    if (!sourceNode || !targetNode) continue;
+
+    const data = edge.data as FluxoEdgeData | undefined;
+    const sourceSide =
+      getHandleSide(data?.sourceHandle ?? edge.sourceHandle) ??
+      inferConnectionSide(sourceNode, targetNode);
+    const targetSide =
+      getHandleSide(data?.targetHandle ?? edge.targetHandle) ??
+      inferConnectionSide(targetNode, sourceNode);
+
+    addEndpoint({ edge, role: "source", node: sourceNode, side: sourceSide });
+    addEndpoint({ edge, role: "target", node: targetNode, side: targetSide });
+  }
+
+  const pointByEndpoint = new Map<string, ShapePoint>();
+  const sideByEndpoint = new Map<string, ShapeConnectionSide>();
+
+  for (const group of endpointGroups.values()) {
+    const sortedGroup = [...group].sort((a, b) => {
+      const edgeOrder = a.edge.id.localeCompare(b.edge.id);
+      if (edgeOrder !== 0) return edgeOrder;
+      return a.role.localeCompare(b.role);
+    });
+
+    for (const [slotIndex, endpoint] of sortedGroup.entries()) {
+      const data = endpoint.node.data as FluxoNodeData;
+      const width = data.width ?? DEFAULT_NEW_NODE_WIDTH;
+      const height = data.height ?? DEFAULT_NEW_NODE_HEIGHT;
+      const localPoint = getDistributedConnectionPoint(
+        data.shape,
+        width,
+        height,
+        endpoint.side,
+        slotIndex,
+        sortedGroup.length,
+      );
+      pointByEndpoint.set(getEndpointKey(endpoint.edge.id, endpoint.role), {
+        x: endpoint.node.position.x + localPoint.x,
+        y: endpoint.node.position.y + localPoint.y,
+      });
+      sideByEndpoint.set(getEndpointKey(endpoint.edge.id, endpoint.role), endpoint.side);
+    }
+  }
+
+  return edges.map((edge) => {
+    const sourcePoint = pointByEndpoint.get(getEndpointKey(edge.id, "source"));
+    const targetPoint = pointByEndpoint.get(getEndpointKey(edge.id, "target"));
+    if (!sourcePoint && !targetPoint) return edge;
+
+    return {
+      ...edge,
+      data: {
+        ...((edge.data as Record<string, unknown> | undefined) ?? {}),
+        ...(sourcePoint ? { __visualSourcePoint: sourcePoint } : {}),
+        ...(targetPoint ? { __visualTargetPoint: targetPoint } : {}),
+        ...(sourcePoint
+          ? { __visualSourceSide: sideByEndpoint.get(getEndpointKey(edge.id, "source")) }
+          : {}),
+        ...(targetPoint
+          ? { __visualTargetSide: sideByEndpoint.get(getEndpointKey(edge.id, "target")) }
+          : {}),
+      },
+    };
+  });
+}
+
+function applyVisualObstacleRects(nodes: Node[], edges: Edge[]): Edge[] {
+  const obstacles = getNodeObstacleRects(nodes);
+
+  return edges.map((edge) => {
+    if (obstacles.length === 0) return edge;
+
+    return {
+      ...edge,
+      data: {
+        ...((edge.data as Record<string, unknown> | undefined) ?? {}),
+        __visualObstacleRects: obstacles,
+        __visualSourceObstacleId: edge.source,
+        __visualTargetObstacleId: edge.target,
+      },
+    };
+  });
+}
+
+function applyVisualRoutePoints(edges: Edge[]): Edge[] {
+  const occupiedSegments: VisualRouteSegment[] = [];
+  const sortedEdges = [...edges].sort((a, b) => a.id.localeCompare(b.id));
+  const routeByEdgeId = new Map<string, ShapePoint[]>();
+
+  for (const edge of sortedEdges) {
+    const data = edge.data as Record<string, unknown> | undefined;
+    const source = getVisualPoint(data?.__visualSourcePoint);
+    const target = getVisualPoint(data?.__visualTargetPoint);
+    const obstacles = getVisualObstacleRects(data?.__visualObstacleRects);
+    const sourceObstacleId =
+      typeof data?.__visualSourceObstacleId === "string"
+        ? data.__visualSourceObstacleId
+        : edge.source;
+    const targetObstacleId =
+      typeof data?.__visualTargetObstacleId === "string"
+        ? data.__visualTargetObstacleId
+        : edge.target;
+    const sourceSide = getVisualSide(data?.__visualSourceSide) ?? inferEndpointSide(source, target);
+    const targetSide = getVisualSide(data?.__visualTargetSide) ?? inferEndpointSide(target, source);
+
+    if (!source || !target || obstacles.length === 0) continue;
+
+    const laneOffset =
+      typeof data?.__visualLaneOffset === "number"
+        ? Math.max(-MAX_EDGE_LANE_OFFSET, Math.min(MAX_EDGE_LANE_OFFSET, data.__visualLaneOffset))
+        : 0;
+    const sourceClearance = getSafeVisualClearancePoint(
+      source,
+      sourceSide,
+      obstacles,
+      sourceObstacleId,
+    );
+    const targetClearance = getSafeVisualClearancePoint(
+      target,
+      targetSide,
+      obstacles,
+      targetObstacleId,
+    );
+    const offset = getPerpendicularOffset(
+      sourceClearance.x,
+      sourceClearance.y,
+      targetClearance.x,
+      targetClearance.y,
+      laneOffset,
+    );
+    const laneCenter = {
+      x: (sourceClearance.x + targetClearance.x) / 2 + offset.x,
+      y: (sourceClearance.y + targetClearance.y) / 2 + offset.y,
+    };
+    const route = routeAvoidingObstacles({
+      edgeId: edge.id,
+      source,
+      sourceClearance,
+      laneCenter,
+      targetClearance,
+      target,
+      useLaneCenter: Math.abs(laneOffset) > 0.5,
+      obstacles,
+      occupiedSegments,
+      sourceObstacleId,
+      targetObstacleId,
+    });
+
+    routeByEdgeId.set(edge.id, route);
+    occupiedSegments.push(...toVisualRouteSegments(edge.id, route));
+  }
+
+  return edges.map((edge) => {
+    const route = routeByEdgeId.get(edge.id);
+    if (!route) return edge;
+
+    return {
+      ...edge,
+      data: {
+        ...((edge.data as Record<string, unknown> | undefined) ?? {}),
+        __visualRoutePoints: route,
+      },
+    };
+  });
+}
+
+function getVisualPoint(value: unknown): ShapePoint | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const point = value as Partial<ShapePoint>;
+  if (typeof point.x !== "number" || typeof point.y !== "number") return undefined;
+  return { x: point.x, y: point.y };
+}
+
+function getVisualObstacleRects(value: unknown): VisualObstacleRect[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const rect = item as Partial<VisualObstacleRect>;
+      if (
+        typeof rect.id !== "string" ||
+        typeof rect.x !== "number" ||
+        typeof rect.y !== "number" ||
+        typeof rect.width !== "number" ||
+        typeof rect.height !== "number" ||
+        typeof rect.left !== "number" ||
+        typeof rect.right !== "number" ||
+        typeof rect.top !== "number" ||
+        typeof rect.bottom !== "number"
+      ) {
+        return null;
+      }
+
+      return {
+        id: rect.id,
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+        centerX: typeof rect.centerX === "number" ? rect.centerX : rect.x + rect.width / 2,
+        centerY: typeof rect.centerY === "number" ? rect.centerY : rect.y + rect.height / 2,
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+      };
+    })
+    .filter((rect): rect is VisualObstacleRect => Boolean(rect));
+}
+
+function getVisualSide(value: unknown): ShapeConnectionSide | null {
+  return value === "top" || value === "right" || value === "bottom" || value === "left"
+    ? value
+    : null;
+}
+
+function inferEndpointSide(from: ShapePoint | undefined, to: ShapePoint | undefined) {
+  if (!from || !to) return "right";
+
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    return dx >= 0 ? "right" : "left";
+  }
+
+  return dy >= 0 ? "bottom" : "top";
+}
+
+function getSafeVisualClearancePoint(
+  point: ShapePoint,
+  side: ShapeConnectionSide,
+  obstacles: VisualObstacleRect[],
+  ownObstacleId: string,
+) {
+  const vector = getSideVector(side);
+  const ownObstacle = obstacles.find((obstacle) => obstacle.id === ownObstacleId);
+  const clearance = {
+    x: point.x + vector.x * EDGE_CLEARANCE,
+    y: point.y + vector.y * EDGE_CLEARANCE,
+  };
+
+  const outsidePoint = pushPointOutsideObstacle(clearance, side, ownObstacle);
+  if (isClearanceCandidateValid(point, outsidePoint, obstacles, ownObstacleId)) {
+    return outsidePoint;
+  }
+
+  const alternatives = getObstacleClearanceCandidates(ownObstacle).sort(
+    (a, b) => getPointDistance(a, outsidePoint) - getPointDistance(b, outsidePoint),
+  );
+  return (
+    alternatives.find((candidate) =>
+      isClearanceCandidateValid(point, candidate, obstacles, ownObstacleId),
+    ) ?? outsidePoint
+  );
+}
+
+function pushPointOutsideObstacle(
+  point: ShapePoint,
+  side: ShapeConnectionSide,
+  obstacle: VisualObstacleRect | undefined,
+) {
+  if (!obstacle) return point;
+  const gap = 2;
+
+  switch (side) {
+    case "top":
+      return { ...point, y: Math.min(point.y, obstacle.top - gap) };
+    case "right":
+      return { ...point, x: Math.max(point.x, obstacle.right + gap) };
+    case "bottom":
+      return { ...point, y: Math.max(point.y, obstacle.bottom + gap) };
+    case "left":
+      return { ...point, x: Math.min(point.x, obstacle.left - gap) };
+  }
+}
+
+function getSideVector(side: ShapeConnectionSide): ShapePoint {
+  switch (side) {
+    case "top":
+      return { x: 0, y: -1 };
+    case "right":
+      return { x: 1, y: 0 };
+    case "bottom":
+      return { x: 0, y: 1 };
+    case "left":
+      return { x: -1, y: 0 };
+  }
+}
+
+function getObstacleClearanceCandidates(obstacle: VisualObstacleRect | undefined) {
+  if (!obstacle) return [];
+  const gap = 2;
+  const centerX = (obstacle.left + obstacle.right) / 2;
+  const centerY = (obstacle.top + obstacle.bottom) / 2;
+  const left = obstacle.left - gap;
+  const right = obstacle.right + gap;
+  const top = obstacle.top - gap;
+  const bottom = obstacle.bottom + gap;
+
+  return [
+    { x: left, y: centerY },
+    { x: right, y: centerY },
+    { x: centerX, y: top },
+    { x: centerX, y: bottom },
+    { x: left, y: top },
+    { x: left, y: bottom },
+    { x: right, y: top },
+    { x: right, y: bottom },
+  ];
+}
+
+function isClearanceCandidateValid(
+  anchor: ShapePoint,
+  candidate: ShapePoint,
+  obstacles: VisualObstacleRect[],
+  ownObstacleId: string,
+) {
+  const segment = { a: anchor, b: candidate };
+
+  return obstacles.every((obstacle) => {
+    if (obstacle.id === ownObstacleId) return true;
+    return (
+      !pointInsideVisualRect(candidate, obstacle) && !segmentIntersectsVisualRect(segment, obstacle)
+    );
+  });
+}
+
+function pointInsideVisualRect(point: ShapePoint, rect: VisualObstacleRect) {
+  return point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
+}
+
+function segmentIntersectsVisualRect(
+  segment: { a: ShapePoint; b: ShapePoint },
+  rect: VisualObstacleRect,
+) {
+  if (pointInsideVisualRect(segment.a, rect) || pointInsideVisualRect(segment.b, rect)) {
+    return true;
+  }
+
+  const sides = [
+    { a: { x: rect.left, y: rect.top }, b: { x: rect.right, y: rect.top } },
+    { a: { x: rect.right, y: rect.top }, b: { x: rect.right, y: rect.bottom } },
+    { a: { x: rect.right, y: rect.bottom }, b: { x: rect.left, y: rect.bottom } },
+    { a: { x: rect.left, y: rect.bottom }, b: { x: rect.left, y: rect.top } },
+  ];
+
+  return sides.some((side) => segmentsIntersect(segment, side));
+}
+
+function segmentsIntersect(
+  first: { a: ShapePoint; b: ShapePoint },
+  second: { a: ShapePoint; b: ShapePoint },
+) {
+  const o1 = orientation(first.a, first.b, second.a);
+  const o2 = orientation(first.a, first.b, second.b);
+  const o3 = orientation(second.a, second.b, first.a);
+  const o4 = orientation(second.a, second.b, first.b);
+
+  if (o1 !== o2 && o3 !== o4) return true;
+  if (o1 === 0 && pointOnSegment(first.a, second.a, first.b)) return true;
+  if (o2 === 0 && pointOnSegment(first.a, second.b, first.b)) return true;
+  if (o3 === 0 && pointOnSegment(second.a, first.a, second.b)) return true;
+  if (o4 === 0 && pointOnSegment(second.a, first.b, second.b)) return true;
+  return false;
+}
+
+function orientation(a: ShapePoint, b: ShapePoint, c: ShapePoint) {
+  const value = (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y);
+  if (Math.abs(value) < 0.001) return 0;
+  return value > 0 ? 1 : 2;
+}
+
+function pointOnSegment(a: ShapePoint, b: ShapePoint, c: ShapePoint) {
+  return (
+    b.x <= Math.max(a.x, c.x) + 0.001 &&
+    b.x + 0.001 >= Math.min(a.x, c.x) &&
+    b.y <= Math.max(a.y, c.y) + 0.001 &&
+    b.y + 0.001 >= Math.min(a.y, c.y)
+  );
+}
+
+function getPointDistance(a: ShapePoint, b: ShapePoint) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function getPerpendicularOffset(
+  sourceX: number,
+  sourceY: number,
+  targetX: number,
+  targetY: number,
+  laneOffset: number,
+): ShapePoint {
+  if (!laneOffset) return { x: 0, y: 0 };
+
+  const dx = targetX - sourceX;
+  const dy = targetY - sourceY;
+  const length = Math.hypot(dx, dy);
+  if (length < 1) return { x: 0, y: 0 };
+
+  return {
+    x: (-dy / length) * laneOffset,
+    y: (dx / length) * laneOffset,
+  };
+}
+
+function getEndpointKey(edgeId: string, role: VisualEndpointRole) {
+  return `${edgeId}::${role}`;
+}
+
+function inferConnectionSide(fromNode: Node, toNode: Node): ShapeConnectionSide {
+  const fromCenter = getNodeCenter(fromNode);
+  const toCenter = getNodeCenter(toNode);
+  const dx = toCenter.x - fromCenter.x;
+  const dy = toCenter.y - fromCenter.y;
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    return dx >= 0 ? "right" : "left";
+  }
+
+  return dy >= 0 ? "bottom" : "top";
+}
+
+function getNodeCenter(node: Node): ShapePoint {
+  const data = node.data as FluxoNodeData;
+  return {
+    x: node.position.x + (data.width ?? DEFAULT_NEW_NODE_WIDTH) / 2,
+    y: node.position.y + (data.height ?? DEFAULT_NEW_NODE_HEIGHT) / 2,
+  };
+}
+
 interface FlowEditorProps {
   project: FlowProject;
 }
@@ -157,7 +728,15 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
   const [project, setProject] = useState<FlowProject>(initialProject);
   const projectRef = useRef<FlowProject>(initialProject);
 
-  const initial = useMemo(() => flowProjectToReactFlow(initialProject), [initialProject]);
+  const initial = useMemo(() => {
+    const rf = flowProjectToReactFlow(initialProject);
+    const expandedNodes = expandNodesForConnectionLoad(rf.nodes, rf.edges);
+    return {
+      ...rf,
+      nodes: expandedNodes,
+      edges: applySmartHandlesToReactFlowEdges(expandedNodes, rf.edges) as Edge[],
+    };
+  }, [initialProject]);
   const [nodes, setNodes] = useState<Node[]>(initial.nodes);
   const [edges, setEdges] = useState<Edge[]>(initial.edges);
   const [compactView, setCompactView] = useState(false);
@@ -170,7 +749,10 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
       })),
     [nodes, compactView],
   );
-  const renderedEdges = useMemo<Edge[]>(() => applyVisualLaneOffsets(edges), [edges]);
+  const renderedEdges = useMemo<Edge[]>(
+    () => applyVisualEdgeMetadata(nodes, edges),
+    [nodes, edges],
+  );
 
   const [tool, setTool] = useState<Tool>("select");
   const [pendingConnectionSource, setPendingConnectionSource] = useState<string | null>(null);
@@ -350,7 +932,12 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           customFields: [],
         };
 
-        setEdges((eds) => resolveAutoEdges(nodes, addEdge(createEdge(serialized), eds)));
+        setEdges((eds) => {
+          const nextEdges = addEdge(createEdge(serialized), eds);
+          const nextNodes = expandNodesForConnectionLoad(nodes, nextEdges);
+          if (nextNodes !== nodes) setNodes(nextNodes);
+          return resolveAutoEdges(nextNodes, nextEdges);
+        });
         setSelectedEdge(null);
       } finally {
         setConnectionState(null);
@@ -398,7 +985,12 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         };
 
         snapshot();
-        setEdges((eds) => resolveAutoEdges(nodes, addEdge(createEdge(serialized), eds)));
+        setEdges((eds) => {
+          const nextEdges = addEdge(createEdge(serialized), eds);
+          const nextNodes = expandNodesForConnectionLoad(nodes, nextEdges);
+          if (nextNodes !== nodes) setNodes(nextNodes);
+          return resolveAutoEdges(nextNodes, nextEdges);
+        });
         setPendingConnectionSource(null);
       } else {
         setSelectedNode(node);
@@ -715,12 +1307,13 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           snapshot();
           const importedProject = flowFileToProject(parsed.file);
           const rf = flowProjectToReactFlow(importedProject);
+          const expandedNodes = expandNodesForConnectionLoad(rf.nodes, rf.edges);
           persistProject(importedProject);
           setBackground(importedProject.background);
           setGridOn(importedProject.settings?.gridVisible ?? true);
           setSnapOn(importedProject.settings?.snapToGrid ?? true);
-          setNodes(rf.nodes);
-          setEdges(rf.edges);
+          setNodes(expandedNodes);
+          setEdges(resolveAutoEdges(expandedNodes, rf.edges));
           setSelectedNode(null);
           setSelectedEdge(null);
           setConnectionState(null);
@@ -733,7 +1326,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
       reader.readAsText(file);
       e.target.value = "";
     },
-    [persistProject, snapshot],
+    [persistProject, resolveAutoEdges, snapshot],
   );
 
   useEffect(() => {
@@ -883,10 +1476,13 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     (data: FluxoNodeData) => {
       if (!selectedNode) return;
       snapshot();
-      setNodes((nds) => nds.map((n) => (n.id === selectedNode.id ? { ...n, data } : n)));
+      setNodes((nds) => {
+        const nextNodes = nds.map((n) => (n.id === selectedNode.id ? { ...n, data } : n));
+        return expandNodesForConnectionLoad(nextNodes, edges);
+      });
       setSelectedNode((n) => (n ? { ...n, data } : n));
     },
-    [selectedNode, snapshot],
+    [edges, selectedNode, snapshot],
   );
 
   const activeSelectedNode = useMemo(
@@ -946,8 +1542,8 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
 
       snapshot();
 
-      setNodes((nds) =>
-        nds.map((node) => {
+      setNodes((nds) => {
+        const nextNodes = nds.map((node) => {
           if (node.id !== nodeId) return node;
 
           const data = node.data as FluxoNodeData;
@@ -958,8 +1554,10 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
               shape,
             },
           };
-        }),
-      );
+        });
+
+        return expandNodesForConnectionLoad(nextNodes, edges);
+      });
 
       setSelectedNode((node) => {
         if (!node || node.id !== nodeId) return node;
@@ -974,7 +1572,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         };
       });
     },
-    [selectedNode?.id, snapshot],
+    [edges, selectedNode?.id, snapshot],
   );
 
   const onDeleteNode = useCallback(() => {

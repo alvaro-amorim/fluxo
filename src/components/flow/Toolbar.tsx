@@ -3,6 +3,7 @@ import {
   MousePointer2,
   Square,
   Shapes,
+  Palette,
   Minus,
   ArrowRight,
   Link2,
@@ -31,6 +32,7 @@ export interface ToolbarProps {
   onModeChange: (m: "side" | "floating") => void;
   tool: Tool;
   onToolChange: (t: Tool) => void;
+  onCycleColor: () => void;
   gridOn: boolean;
   snapOn: boolean;
   compactView: boolean;
@@ -144,6 +146,12 @@ export function Toolbar(props: ToolbarProps) {
             onClick={() => props.onToolChange(t.id)}
           />
         ))}
+        <ToolRow
+          icon={Palette}
+          label="Cor"
+          shortcut={getShortcut("tool.color")}
+          onClick={props.onCycleColor}
+        />
       </Section>
 
       <Section title="Organização">

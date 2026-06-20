@@ -6,6 +6,7 @@ import {
   BackgroundVariant,
   Controls,
   MiniMap,
+  MarkerType,
   addEdge,
   applyEdgeChanges,
   applyNodeChanges,
@@ -92,6 +93,31 @@ const edgeTypes: EdgeTypes = { fluxo: FluxoEdge };
 
 const DEFAULT_EDGE_STROKE = "#374151";
 const DUPLICATE_EDGE_STROKES = ["#2563eb", "#16a34a", "#ea580c", "#7c3aed", "#db2777", "#0891b2"];
+const SHAPE_CYCLE: ShapeType[] = [
+  "rounded-rectangle",
+  "rectangle",
+  "circle",
+  "diamond",
+  "hexagon",
+  "cylinder",
+];
+const NODE_COLOR_PRESETS = [
+  { backgroundColor: "#ffffff", borderColor: "#d1d5db", textColor: "#111827" },
+  { backgroundColor: "#eff6ff", borderColor: "#2563eb", textColor: "#1e3a8a" },
+  { backgroundColor: "#ecfdf5", borderColor: "#16a34a", textColor: "#14532d" },
+  { backgroundColor: "#fff7ed", borderColor: "#ea580c", textColor: "#7c2d12" },
+  { backgroundColor: "#faf5ff", borderColor: "#7c3aed", textColor: "#3b0764" },
+  { backgroundColor: "#fdf2f8", borderColor: "#db2777", textColor: "#831843" },
+] as const;
+const EDGE_COLOR_PRESETS = [
+  "#374151",
+  "#2563eb",
+  "#16a34a",
+  "#ea580c",
+  "#7c3aed",
+  "#db2777",
+  "#0891b2",
+] as const;
 const DEFAULT_NEW_NODE_WIDTH = 180;
 const DEFAULT_NEW_NODE_HEIGHT = 80;
 const EDGE_LANE_STEP = 22;
@@ -107,6 +133,11 @@ function getNextEdgeStroke(existingEdges: Edge[], source: string, target: string
   if (duplicateCount === 0) return DEFAULT_EDGE_STROKE;
 
   return DUPLICATE_EDGE_STROKES[(duplicateCount - 1) % DUPLICATE_EDGE_STROKES.length];
+}
+
+function getNextCycleItem<T>(items: readonly T[], current: T | undefined) {
+  const index = current === undefined ? -1 : items.indexOf(current);
+  return items[(index + 1) % items.length]!;
 }
 
 type FlowSnapshot = { nodes: Node[]; edges: Edge[] };
@@ -1598,13 +1629,249 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     [addBlock],
   );
 
+  const setSelectedEdgeArrow = useCallback(
+    (hasArrow: boolean) => {
+      if (!selectedEdge) {
+        activateTool(hasArrow ? "arrow" : "line");
+        return;
+      }
+
+      snapshot();
+
+      setEdges((eds) => {
+        const nextEdges = eds.map((edge) => {
+          if (edge.id !== selectedEdge.id) return edge;
+
+          const data = (edge.data as FluxoEdgeData | undefined) ?? {
+            hiddenInfo: "",
+            lineType: "orthogonal",
+            stroke: "solid",
+            hasArrow: true,
+            semantic: { ...DEFAULT_EDGE_SEMANTIC },
+          };
+          const stroke =
+            data.style?.stroke ??
+            (typeof edge.style?.stroke === "string" ? edge.style.stroke : DEFAULT_EDGE_STROKE);
+          const strokeWidth = Number(data.style?.strokeWidth ?? edge.style?.strokeWidth ?? 2);
+          const strokeDasharray =
+            data.stroke === "dashed" ? "5 4" : (data.style?.strokeDasharray ?? null);
+          const marker = hasArrow
+            ? {
+                type: MarkerType.ArrowClosed,
+                color: stroke,
+                width: 18,
+                height: 18,
+              }
+            : undefined;
+
+          const nextData: FluxoEdgeData = {
+            ...data,
+            lineType: "orthogonal",
+            hasArrow,
+            direction: "forward",
+            style: {
+              ...(data.style ?? {}),
+              stroke,
+              strokeWidth,
+              strokeDasharray,
+              markerEnd: hasArrow ? "arrow" : "none",
+            },
+          };
+
+          return {
+            ...edge,
+            markerStart: undefined,
+            markerEnd: marker,
+            style: {
+              ...edge.style,
+              stroke,
+              strokeWidth,
+              strokeDasharray: strokeDasharray ?? undefined,
+            },
+            data: nextData,
+          };
+        });
+
+        setSelectedEdge(nextEdges.find((edge) => edge.id === selectedEdge.id) ?? null);
+        return resolveAutoEdges(nodes, nextEdges);
+      });
+    },
+    [activateTool, nodes, resolveAutoEdges, selectedEdge, snapshot],
+  );
+
+  const cycleSelectedNodeShape = useCallback(() => {
+    const nodeId = selectedNode?.id;
+    if (!nodeId) {
+      activateTool("shape");
+      return;
+    }
+
+    const currentNode = nodes.find((node) => node.id === nodeId) ?? selectedNode;
+    const currentData = currentNode.data as FluxoNodeData;
+    const nextShape = getNextCycleItem(SHAPE_CYCLE, currentData.shape);
+
+    snapshot();
+
+    setNodes((nds) => {
+      const nextNodes = nds.map((node) => {
+        if (node.id !== nodeId) return node;
+
+        const data = node.data as FluxoNodeData;
+        return {
+          ...node,
+          data: {
+            ...data,
+            shape: nextShape,
+          },
+        };
+      });
+
+      return expandNodesForConnectionLoad(nextNodes, edges);
+    });
+
+    setSelectedNode((node) => {
+      if (!node || node.id !== nodeId) return node;
+
+      const data = node.data as FluxoNodeData;
+      return {
+        ...node,
+        data: {
+          ...data,
+          shape: nextShape,
+        },
+      };
+    });
+  }, [activateTool, edges, nodes, selectedNode, snapshot]);
+
+  const cycleSelectedColor = useCallback(() => {
+    if (selectedNode && !selectedEdge) {
+      const nodeId = selectedNode.id;
+      const currentNode = nodes.find((node) => node.id === nodeId) ?? selectedNode;
+      const currentData = currentNode.data as FluxoNodeData;
+      const currentColor = currentData.style?.backgroundColor?.toLowerCase();
+      const currentIndex = NODE_COLOR_PRESETS.findIndex(
+        (preset) => preset.backgroundColor.toLowerCase() === currentColor,
+      );
+      const nextPreset = NODE_COLOR_PRESETS[(currentIndex + 1) % NODE_COLOR_PRESETS.length]!;
+
+      snapshot();
+
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id !== nodeId) return node;
+
+          const data = node.data as FluxoNodeData;
+          return {
+            ...node,
+            data: {
+              ...data,
+              style: {
+                ...data.style,
+                ...nextPreset,
+              },
+            },
+          };
+        }),
+      );
+
+      setSelectedNode((node) => {
+        if (!node || node.id !== nodeId) return node;
+
+        const data = node.data as FluxoNodeData;
+        return {
+          ...node,
+          data: {
+            ...data,
+            style: {
+              ...data.style,
+              ...nextPreset,
+            },
+          },
+        };
+      });
+      return;
+    }
+
+    if (selectedEdge) {
+      const edgeId = selectedEdge.id;
+      const currentData = selectedEdge.data as FluxoEdgeData | undefined;
+      const currentStroke =
+        currentData?.style?.stroke ??
+        (typeof selectedEdge.style?.stroke === "string"
+          ? selectedEdge.style.stroke
+          : DEFAULT_EDGE_STROKE);
+      const nextStroke = getNextCycleItem(EDGE_COLOR_PRESETS, currentStroke);
+
+      snapshot();
+
+      setEdges((eds) => {
+        const nextEdges = eds.map((edge) => {
+          if (edge.id !== edgeId) return edge;
+
+          const data = (edge.data as FluxoEdgeData | undefined) ?? {
+            hiddenInfo: "",
+            lineType: "orthogonal",
+            stroke: "solid",
+            hasArrow: true,
+            semantic: { ...DEFAULT_EDGE_SEMANTIC },
+          };
+          const strokeWidth = Number(data.style?.strokeWidth ?? edge.style?.strokeWidth ?? 2);
+          const strokeDasharray =
+            data.stroke === "dashed" ? "5 4" : (data.style?.strokeDasharray ?? null);
+          const hasStartMarker = data.direction === "bidirectional";
+          const hasEndMarker = data.hasArrow || data.direction === "bidirectional";
+          const marker =
+            hasStartMarker || hasEndMarker
+              ? {
+                  type: MarkerType.ArrowClosed,
+                  color: nextStroke,
+                  width: 18,
+                  height: 18,
+                }
+              : undefined;
+
+          const nextData: FluxoEdgeData = {
+            ...data,
+            style: {
+              ...(data.style ?? {}),
+              stroke: nextStroke,
+              strokeWidth,
+              strokeDasharray,
+              markerEnd: hasEndMarker ? "arrow" : "none",
+            },
+          };
+
+          return {
+            ...edge,
+            markerStart: hasStartMarker ? marker : undefined,
+            markerEnd: hasEndMarker ? marker : undefined,
+            style: {
+              ...edge.style,
+              stroke: nextStroke,
+              strokeWidth,
+              strokeDasharray: strokeDasharray ?? undefined,
+            },
+            data: nextData,
+          };
+        });
+
+        setSelectedEdge(nextEdges.find((edge) => edge.id === edgeId) ?? null);
+        return nextEdges;
+      });
+      return;
+    }
+
+    toast.info("Selecione um bloco, linha ou seta para mudar a cor.");
+  }, [nodes, selectedEdge, selectedNode, snapshot]);
+
   const shortcutActions = useMemo<EditorShortcutActions>(
     () => ({
       "tool.select": () => activateTool("select"),
       "tool.block": () => activateTool("block"),
-      "tool.shape": () => activateTool("shape"),
-      "tool.line": () => activateTool("line"),
-      "tool.arrow": () => activateTool("arrow"),
+      "tool.shape": cycleSelectedNodeShape,
+      "tool.color": cycleSelectedColor,
+      "tool.line": () => setSelectedEdgeArrow(false),
+      "tool.arrow": () => setSelectedEdgeArrow(true),
       "tool.connect": () => activateTool("connect"),
       "tool.text": () => activateTool("text"),
       "layout.organize": () => organize("horizontal"),
@@ -1634,6 +1901,8 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
     }),
     [
       activateTool,
+      cycleSelectedColor,
+      cycleSelectedNodeShape,
       deleteSelection,
       duplicateSelection,
       exportJson,
@@ -1642,6 +1911,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
       organize,
       redo,
       selectAll,
+      setSelectedEdgeArrow,
       triggerImport,
       undo,
     ],
@@ -2072,6 +2342,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
         onModeChange={setToolbarMode}
         tool={tool}
         onToolChange={activateTool}
+        onCycleColor={cycleSelectedColor}
         gridOn={gridOn}
         snapOn={snapOn}
         compactView={compactView}

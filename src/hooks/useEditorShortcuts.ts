@@ -4,6 +4,7 @@ export type EditorShortcutId =
   | "tool.select"
   | "tool.block"
   | "tool.shape"
+  | "tool.color"
   | "tool.line"
   | "tool.arrow"
   | "tool.connect"
@@ -24,7 +25,7 @@ export type EditorShortcutId =
   | "editor.escape"
   | "editor.help";
 
-export type EditorShortcutGroup = "Ferramentas" | "Organização" | "Visualização" | "Arquivo";
+export type EditorShortcutGroup = "Ferramentas" | "Organiza??o" | "Visualiza??o" | "Arquivo";
 
 export type EditorShortcutDefinition = {
   id: EditorShortcutId;
@@ -43,14 +44,39 @@ export type EditorShortcutDefinition = {
 export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
   { id: "tool.select", group: "Ferramentas", label: "Selecionar/mover", display: "V", key: "v" },
   { id: "tool.block", group: "Ferramentas", label: "Criar bloco", display: "B", key: "b" },
-  { id: "tool.shape", group: "Ferramentas", label: "Criar forma", display: "F", key: "f" },
-  { id: "tool.line", group: "Ferramentas", label: "Criar linha", display: "L", key: "l" },
-  { id: "tool.arrow", group: "Ferramentas", label: "Criar seta", display: "A", key: "a" },
+  {
+    id: "tool.shape",
+    group: "Ferramentas",
+    label: "Forma / ciclar forma",
+    display: "F",
+    key: "f",
+  },
+  {
+    id: "tool.color",
+    group: "Ferramentas",
+    label: "Cor da sele??o",
+    display: "K",
+    key: "k",
+  },
+  {
+    id: "tool.line",
+    group: "Ferramentas",
+    label: "Linha / converter sele??o",
+    display: "L",
+    key: "l",
+  },
+  {
+    id: "tool.arrow",
+    group: "Ferramentas",
+    label: "Seta / converter sele??o",
+    display: "A",
+    key: "a",
+  },
   { id: "tool.connect", group: "Ferramentas", label: "Conectar", display: "C", key: "c" },
   { id: "tool.text", group: "Ferramentas", label: "Editar texto", display: "T", key: "t" },
   {
     id: "layout.organize",
-    group: "Organização",
+    group: "Organiza??o",
     label: "Organizar fluxo",
     display: "Alt + L",
     key: "l",
@@ -58,7 +84,7 @@ export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
   },
   {
     id: "history.undo",
-    group: "Organização",
+    group: "Organiza??o",
     label: "Desfazer",
     display: "Ctrl + Z",
     key: "z",
@@ -66,7 +92,7 @@ export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
   },
   {
     id: "history.redo",
-    group: "Organização",
+    group: "Organiza??o",
     label: "Refazer",
     display: "Ctrl + Y / Ctrl + Shift + Z",
     key: "y",
@@ -74,15 +100,15 @@ export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
   },
   {
     id: "selection.duplicate",
-    group: "Organização",
-    label: "Duplicar seleção",
+    group: "Organiza??o",
+    label: "Duplicar sele??o",
     display: "Ctrl + D",
     key: "d",
     primary: true,
   },
   {
     id: "selection.all",
-    group: "Organização",
+    group: "Organiza??o",
     label: "Selecionar tudo",
     display: "Ctrl + A",
     key: "a",
@@ -90,25 +116,25 @@ export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
   },
   {
     id: "selection.delete",
-    group: "Organização",
-    label: "Excluir seleção",
+    group: "Organiza??o",
+    label: "Excluir sele??o",
     display: "Delete",
     key: "delete",
   },
-  { id: "view.grid", group: "Visualização", label: "Ligar/desligar grid", display: "G", key: "g" },
-  { id: "view.snap", group: "Visualização", label: "Ligar/desligar snap", display: "S", key: "s" },
+  { id: "view.grid", group: "Visualiza??o", label: "Ligar/desligar grid", display: "G", key: "g" },
+  { id: "view.snap", group: "Visualiza??o", label: "Ligar/desligar snap", display: "S", key: "s" },
   {
     id: "view.fit",
-    group: "Visualização",
-    label: "Ajustar à tela",
+    group: "Visualiza??o",
+    label: "Ajustar ? tela",
     display: "Ctrl + 0",
     key: "0",
     primary: true,
   },
   {
     id: "view.presentation",
-    group: "Visualização",
-    label: "Modo apresentação",
+    group: "Visualiza??o",
+    label: "Modo apresenta??o",
     display: "Shift + P",
     key: "p",
     shift: true,
@@ -139,7 +165,7 @@ export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
   },
   {
     id: "editor.escape",
-    group: "Organização",
+    group: "Organiza??o",
     label: "Cancelar / fechar",
     display: "Esc",
     key: "escape",
@@ -148,7 +174,7 @@ export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
   },
   {
     id: "editor.help",
-    group: "Visualização",
+    group: "Visualiza??o",
     label: "Mostrar atalhos",
     display: "?",
     key: "?",
@@ -158,7 +184,7 @@ export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
 
 const REDO_ALTERNATIVE: EditorShortcutDefinition = {
   id: "history.redo",
-  group: "Organização",
+  group: "Organiza??o",
   label: "Refazer",
   display: "Ctrl + Shift + Z",
   key: "z",

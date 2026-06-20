@@ -8,7 +8,6 @@ export type EditorShortcutId =
   | "tool.line"
   | "tool.arrow"
   | "tool.connect"
-  | "tool.text"
   | "layout.organize"
   | "history.undo"
   | "history.redo"
@@ -73,7 +72,6 @@ export const EDITOR_SHORTCUTS: readonly EditorShortcutDefinition[] = [
     key: "a",
   },
   { id: "tool.connect", group: "Ferramentas", label: "Conectar", display: "C", key: "c" },
-  { id: "tool.text", group: "Ferramentas", label: "Editar texto", display: "T", key: "t" },
   {
     id: "layout.organize",
     group: "Organiza??o",

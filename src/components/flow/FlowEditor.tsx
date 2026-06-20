@@ -1873,7 +1873,6 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
       "tool.line": () => setSelectedEdgeArrow(false),
       "tool.arrow": () => setSelectedEdgeArrow(true),
       "tool.connect": () => activateTool("connect"),
-      "tool.text": () => activateTool("text"),
       "layout.organize": () => organize("horizontal"),
       "history.undo": undo,
       "history.redo": redo,
@@ -2284,6 +2283,7 @@ function FlowEditorInner({ project: initialProject }: FlowEditorProps) {
           edgeTypes={edgeTypes}
           snapToGrid={snapOn}
           snapGrid={[16, 16]}
+          minZoom={0.01}
           fitView
           style={{ backgroundColor: background }}
           proOptions={{ hideAttribution: true }}

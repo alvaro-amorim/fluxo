@@ -7,7 +7,6 @@ import {
   Minus,
   ArrowRight,
   Link2,
-  Type,
   LayoutGrid,
   Undo2,
   Redo2,
@@ -25,7 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { EDITOR_SHORTCUT_BY_ID, type EditorShortcutId } from "@/hooks/useEditorShortcuts";
 
-export type Tool = "select" | "block" | "shape" | "line" | "arrow" | "connect" | "text";
+export type Tool = "select" | "block" | "shape" | "line" | "arrow" | "connect";
 
 export interface ToolbarProps {
   mode: "side" | "floating";
@@ -57,7 +56,6 @@ const tools: { id: Tool; label: string; icon: React.ElementType; shortcutId: Edi
     { id: "line", label: "Linha", icon: Minus, shortcutId: "tool.line" },
     { id: "arrow", label: "Seta", icon: ArrowRight, shortcutId: "tool.arrow" },
     { id: "connect", label: "Conectar", icon: Link2, shortcutId: "tool.connect" },
-    { id: "text", label: "Texto", icon: Type, shortcutId: "tool.text" },
   ];
 
 function getShortcut(id: EditorShortcutId) {

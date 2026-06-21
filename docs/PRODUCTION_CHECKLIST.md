@@ -1,6 +1,18 @@
-﻿# Checklist de produÃ§Ã£o do Fluxo
+# Checklist de produção do Fluxo
 
-## InstalaÃ§Ã£o e validaÃ§Ã£o tÃ©cnica
+Este checklist deve ser usado antes de promover uma nova versão do **Fluxo** para produção.
+
+O objetivo é validar três frentes:
+
+1. qualidade técnica do build;
+2. funcionamento real do editor;
+3. confiabilidade das páginas públicas e do deploy.
+
+---
+
+## 1. Validação técnica local
+
+Execute sempre a partir da raiz do projeto:
 
 ```bash
 npm ci
@@ -10,83 +22,161 @@ npm run build
 npm run preview
 ```
 
+Critérios mínimos:
+
 - [ ] Node.js 20 ou superior configurado.
-- [ ] Build termina sem erros.
-- [ ] Lint nÃ£o apresenta erros.
-- [ ] `git diff --check` nÃ£o apresenta whitespace invÃ¡lido.
-- [ ] Nenhum segredo, token ou arquivo `.env` foi commitado.
-- [ ] Preset Nitro corresponde ao provedor de deploy.
+- [ ] `npm ci` executa sem erro.
+- [ ] `npm run format` conclui sem alterar arquivos inesperados.
+- [ ] `npm run lint` conclui com 0 erros.
+- [ ] Warnings conhecidos de Fast Refresh foram revisados e não bloqueiam o release.
+- [ ] `npm run build` conclui sem erro.
+- [ ] `npm run preview` serve o artefato compilado.
+- [ ] `git diff --check` não aponta whitespace inválido.
+- [ ] Nenhum segredo, token, `.env`, arquivo temporário ou build local foi commitado.
 
-## Checklist manual do editor
+---
 
-- [ ] Criar um fluxo pela home e pela rota `/editor`.
+## 2. Checklist manual do editor
+
+Valide o editor em navegador real, preferencialmente no Chrome e em pelo menos uma viewport menor.
+
+### Fluxos básicos
+
+- [ ] Criar um novo fluxo pela home.
+- [ ] Criar um novo fluxo pela rota `/editor`.
+- [ ] Abrir um fluxo existente em `/editor/:id`.
 - [ ] Criar, mover, redimensionar, duplicar e excluir blocos.
-- [ ] Trocar forma, cor e propriedades sem perder dados.
-- [ ] Criar seta normal e bidirecional.
-- [ ] Confirmar handles, anchors, corredores e desvio de blocos.
-- [ ] Confirmar que blocos nÃ£o permanecem sobrepostos apÃ³s o drag.
+- [ ] Trocar título, forma e cor sem perder dados do bloco.
+- [ ] Criar linha, seta e seta bidirecional.
+- [ ] Converter linha em seta com `A`.
+- [ ] Converter seta em linha com `L`.
+- [ ] Alternar forma do bloco selecionado com `F`.
+- [ ] Alternar cor de bloco, linha ou seta com `K`.
+
+### Canvas e roteamento
+
+- [ ] Confirmar handles geométricos nas bordas reais das formas.
+- [ ] Confirmar que múltiplas setas usam corredores visuais separados.
+- [ ] Confirmar que blocos funcionam como obstáculos sólidos para rotas automáticas.
+- [ ] Confirmar que blocos não permanecem sobrepostos após drag, criação, duplicação ou resize.
+- [ ] Confirmar que autoexpansão de blocos não reseta conteúdo, cor, forma ou estilo.
+- [ ] Testar com pelo menos 20 blocos e 30 conexões.
+
+### Produtividade
+
 - [ ] Testar undo e redo.
-- [ ] Testar grid, snap, organizar, zoom e modo apresentaÃ§Ã£o.
-- [ ] Exportar `.flow`, importar o mesmo arquivo e comparar o conteÃºdo.
-- [ ] Exportar PNG com formas, textos e setas visÃ­veis.
-- [ ] Confirmar atalhos contextuais F, K, L e A sem disparar em campos de texto.
-- [ ] Testar com pelo menos 20 blocos e 30 conexÃµes.
+- [ ] Testar grid e snap.
+- [ ] Testar organizar fluxo.
+- [ ] Testar zoom amplo e ajuste à tela.
+- [ ] Testar modo apresentação.
+- [ ] Confirmar que atalhos não disparam enquanto o usuário digita em inputs, modais ou campos editáveis.
 
-## Rotas pÃºblicas
+### Portabilidade
 
-- [ ] `/` apresenta o produto e abre o editor.
-- [ ] `/editor` cria um projeto e redireciona para `/editor/:id`.
-- [ ] `/exemplos` abre e possui CTA funcional.
-- [ ] `/sobre`, `/privacidade`, `/termos` e `/contato` abrem por URL direta.
-- [ ] Links de header e footer nÃ£o retornam 404.
-- [ ] PÃ¡gina 404 estÃ¡ em portuguÃªs e oferece retorno Ã  home.
+- [ ] Exportar `.flow`.
+- [ ] Importar o mesmo arquivo `.flow`.
+- [ ] Confirmar que posições, formas, setas, cores e informações ocultas são preservadas.
+- [ ] Exportar PNG com formas, textos e setas visíveis.
+
+---
+
+## 3. Rotas públicas
+
+Valide todas as rotas por navegação interna e por acesso direto/refresh.
+
+| Rota | Critério |
+| --- | --- |
+| `/` | Home apresenta o produto, biblioteca local e CTA para o editor. |
+| `/editor` | Cria um novo fluxo e abre o editor. |
+| `/editor/:id` | Abre um fluxo local específico. |
+| `/exemplos` | Exibe casos de uso e CTA funcional. |
+| `/sobre` | Explica o produto de forma clara. |
+| `/privacidade` | Descreve armazenamento local e ausência de conta no MVP. |
+| `/termos` | Define responsabilidade do usuário e limitações do MVP. |
+| `/contato` | Exibe e-mail de contato real. |
+
+Também validar:
+
+- [ ] Header e footer não têm links quebrados.
+- [ ] Página 404 está em português e oferece retorno à home.
 - [ ] Layout funciona em desktop e mobile.
-- [ ] Console nÃ£o apresenta erros crÃ­ticos.
+- [ ] Console não apresenta erro crítico.
 
-## SEO bÃ¡sico
+---
 
-- [ ] `title` e `meta description` sÃ£o especÃ­ficos por pÃ¡gina.
+## 4. SEO e metadados
+
+- [ ] `title` e `meta description` são adequados ao produto.
 - [ ] Open Graph e Twitter Card aparecem no HTML renderizado.
-- [ ] `lang="pt-BR"` estÃ¡ presente.
-- [ ] `robots.txt` estÃ¡ acessÃ­vel.
-- [ ] Editor estÃ¡ marcado como `noindex` e bloqueado no `robots.txt`.
-- [ ] `VITE_SITE_URL` usa o domÃ­nio final antes do deploy pÃºblico.
-- [ ] Canonical nÃ£o aponta para preview ou domÃ­nio provisÃ³rio.
+- [ ] `lang="pt-BR"` está presente.
+- [ ] `robots.txt` está acessível.
+- [ ] Editor não é tratado como página principal de SEO.
+- [ ] `VITE_SITE_URL` usa a URL pública final do deploy.
+- [ ] Canonical não aponta para preview antigo ou domínio incorreto.
 - [ ] Favicon carrega.
-- [ ] Gerar `sitemap.xml` com URLs absolutas apÃ³s definiÃ§Ã£o do domÃ­nio final.
+- [ ] Quando houver domínio estável, gerar e publicar `sitemap.xml` com URLs absolutas.
 
-## Privacidade, termos e contato
+---
 
-- [ ] PolÃ­tica descreve corretamente localStorage, importaÃ§Ã£o e exportaÃ§Ã£o local.
-- [ ] PolÃ­tica informa serviÃ§os externos efetivamente usados.
-- [ ] Termos deixam clara a responsabilidade pelo conteÃºdo e por backups.
-- [ ] Substituir `comerc.ias.prod@gmail.com` pelo e-mail oficial.
-- [ ] Confirmar que nÃ£o foi inventada razÃ£o social ou entidade jurÃ­dica.
-- [ ] Revisar textos com responsÃ¡vel jurÃ­dico antes de escala comercial.
+## 5. Privacidade, termos e contato
 
-## Deploy
+- [ ] Política descreve corretamente armazenamento local no navegador.
+- [ ] Política explica importação/exportação local de arquivos `.flow` e PNG.
+- [ ] Política informa serviços externos efetivamente usados.
+- [ ] Termos deixam clara a responsabilidade do usuário pelo conteúdo criado.
+- [ ] Termos orientam o usuário a manter backups dos arquivos `.flow`.
+- [ ] E-mail de contato está correto.
+- [ ] Nenhuma razão social, CNPJ ou entidade jurídica foi inventada.
+- [ ] Revisão jurídica final foi considerada antes de escala comercial.
 
-- [ ] Seguir [DEPLOY.md](DEPLOY.md).
-- [ ] Testar a URL de preview do provedor.
-- [ ] Abrir cada rota por refresh e link direto.
-- [ ] Verificar HTTPS, headers e cache dos assets.
-- [ ] Repetir teste de importaÃ§Ã£o/exportaÃ§Ã£o no domÃ­nio publicado.
-- [ ] Confirmar que dados locais de um domÃ­nio de preview nÃ£o sÃ£o confundidos com produÃ§Ã£o.
+---
 
-## PreparaÃ§Ã£o futura para Google AdSense
+## 6. Deploy
 
-NÃ£o integrar anÃºncios antes de o site ter utilidade real, conteÃºdo pÃºblico suficiente e navegaÃ§Ã£o estÃ¡vel.
+Seguir [DEPLOY.md](DEPLOY.md).
 
-- [ ] Validar as polÃ­ticas oficiais atualizadas do Google AdSense na data da integraÃ§Ã£o.
-- [ ] Publicar conteÃºdo prÃ³prio Ãºtil alÃ©m do canvas, como exemplos, tutoriais e documentaÃ§Ã£o.
-- [ ] Revisar polÃ­tica de privacidade, cookies e mecanismo de consentimento aplicÃ¡vel.
-- [ ] Definir analytics e retenÃ§Ã£o de dados antes de ativÃ¡-los.
-- [ ] Considerar anÃºncios apenas na home, pÃ¡ginas de conteÃºdo, exemplos/templates e tutoriais.
-- [ ] NÃ£o colocar anÃºncios dentro do canvas/editor nesta fase.
-- [ ] NÃ£o posicionar anÃºncios perto de criar bloco, importar, exportar ou outros comandos crÃ­ticos.
-- [ ] NÃ£o usar incentivo a clique, elementos que imitem controles ou placeholders enganosos.
-- [ ] Avaliar impacto em performance, acessibilidade e estabilidade visual antes da publicaÃ§Ã£o.
+Checklist específico:
 
-## CritÃ©rio de liberaÃ§Ã£o
+- [ ] Deploy conectado ao branch correto.
+- [ ] Build command configurado como `npm run build`.
+- [ ] Install command configurado como `npm ci`.
+- [ ] Output directory não foi forçado como pasta estática manual.
+- [ ] `VITE_SITE_URL` configurado com a URL final.
+- [ ] Redeploy executado após alterar variáveis de ambiente.
+- [ ] Todas as rotas abrem por link direto no ambiente publicado.
+- [ ] Importação/exportação testadas no domínio publicado.
+- [ ] Dados locais de preview não foram confundidos com dados de produção.
 
-O release sÃ³ deve ser promovido quando build, lint, rotas pÃºblicas e fluxo completo de ediÃ§Ã£o/importaÃ§Ã£o/exportaÃ§Ã£o estiverem validados no ambiente de preview. PendÃªncias conhecidas devem ser registradas antes do merge.
+---
+
+## 7. Preparação futura para Google AdSense
+
+O Fluxo ainda não deve receber anúncios dentro do editor. A prioridade é manter utilidade real, navegação clara e experiência estável.
+
+Antes de integrar AdSense:
+
+- [ ] Validar políticas oficiais atualizadas do Google AdSense na data da integração.
+- [ ] Publicar conteúdo próprio útil além do canvas, como exemplos, tutoriais e documentação.
+- [ ] Revisar política de privacidade, cookies e consentimento aplicável.
+- [ ] Definir analytics e retenção de dados antes de ativá-los.
+- [ ] Considerar anúncios apenas em home, páginas de conteúdo, exemplos/templates e tutoriais.
+- [ ] Não colocar anúncios dentro do canvas/editor nesta fase.
+- [ ] Não posicionar anúncios perto de criar bloco, importar, exportar ou outros comandos críticos.
+- [ ] Não incentivar clique em anúncio.
+- [ ] Não usar elementos que imitem controles do app ou placeholders enganosos.
+- [ ] Avaliar impacto em performance, acessibilidade e estabilidade visual antes da publicação.
+
+---
+
+## 8. Critério de liberação
+
+Uma versão só deve ser promovida quando:
+
+- lint e build passam;
+- rotas públicas abrem em produção;
+- editor cria, conecta, exporta, importa e apresenta fluxos;
+- atalhos principais funcionam;
+- não há alterações locais pendentes;
+- pendências conhecidas estão documentadas.
+
+Se algum item crítico falhar, não promover o release.

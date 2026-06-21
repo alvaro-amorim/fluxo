@@ -1,6 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Plus, Upload, Sparkles, Search, Copy, ArrowUpRight, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Upload,
+  Sparkles,
+  Search,
+  Copy,
+  ArrowUpRight,
+  Trash2,
+  Gauge,
+  UserRoundX,
+  FileDown,
+  Workflow,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Toaster } from "@/components/ui/sonner";
@@ -16,23 +28,17 @@ import {
 import { flowFileToProject, validateFlowFile } from "@/lib/flow/example";
 import { ExternalAiFlowModal } from "@/components/flow/ExternalAiFlowModal";
 import type { FlowProject } from "@/lib/flow/types";
+import { PublicFooter, PublicHeader } from "@/components/site/PublicSite";
+import { createPageHead } from "@/lib/siteMeta";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Fluxo — desenhe fluxogramas com clareza" },
-      {
-        name: "description",
-        content:
-          "Fluxo é uma ferramenta minimalista para desenhar fluxogramas, com canvas infinito, blocos personalizáveis e exportação em .flow.json.",
-      },
-      { property: "og:title", content: "Fluxo — desenhe fluxogramas com clareza" },
-      {
-        property: "og:description",
-        content: "Ferramenta minimalista para desenhar fluxogramas manualmente.",
-      },
-    ],
-  }),
+  head: () =>
+    createPageHead({
+      title: "Fluxo",
+      description:
+        "Editor gratuito de fluxogramas para criar, organizar, importar e exportar processos diretamente no navegador.",
+      path: "/",
+    }),
   component: HomePage,
 });
 
@@ -117,29 +123,7 @@ function HomePage() {
         style={{ background: "radial-gradient(closest-side, var(--brand-soft), transparent)" }}
       />
 
-      {/* Header */}
-      <header className="relative z-10">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <div className="flex items-center gap-2.5">
-            <div className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card shadow-sm">
-              <span className="font-display text-lg leading-none italic">F</span>
-              <span className="absolute -bottom-1 -right-1 h-2 w-2 rounded-full bg-brand" />
-            </div>
-            <div className="leading-tight">
-              <div className="text-[15px] font-medium tracking-tight">Fluxo</div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                desenhe . pense . exporte
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="hidden sm:inline-flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand" />
-              v0.1 · pré-visualização
-            </span>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       {/* Hero */}
       <section className="relative z-10 mx-auto max-w-6xl px-6 pt-16 pb-10">
@@ -149,19 +133,20 @@ function HomePage() {
               <Sparkles className="h-3 w-3 text-brand" />
               Editor visual de fluxogramas
             </div>
-            <h1 className="font-display text-[64px] leading-[0.95] tracking-tight text-foreground sm:text-[88px]">
-              Desenhe
+            <h1 className="font-display text-[60px] leading-[0.96] text-foreground sm:text-[82px]">
+              Fluxo,
               <br />
-              <span className="italic text-brand">fluxogramas</span>
+              <span className="italic text-brand">editor gratuito</span>
               <br />
-              <span className="text-muted-foreground">com clareza.</span>
+              <span className="text-muted-foreground">de fluxogramas.</span>
             </h1>
             <p className="mt-6 max-w-lg text-[15px] leading-relaxed text-muted-foreground">
-              Uma tela infinita, blocos simples e o necessário para pensar visualmente. Exporte como{" "}
+              Crie, conecte e organize processos diretamente no navegador. Sem cadastro no MVP, com
+              importação e exportação em{" "}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[12px] text-foreground">
-                .flow.json
+                .flow
               </code>{" "}
-              ou continue conversando com IAs externas.
+              e PNG.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-2">
@@ -170,7 +155,7 @@ function HomePage() {
                 className="h-10 gap-2 rounded-full bg-foreground px-5 text-background hover:bg-foreground/90"
               >
                 <Plus className="h-4 w-4" />
-                Criar novo fluxo
+                Abrir editor grátis
               </Button>
               <Button
                 variant="outline"
@@ -178,7 +163,7 @@ function HomePage() {
                 className="h-10 gap-2 rounded-full border-border bg-card px-5"
               >
                 <Upload className="h-4 w-4" />
-                Importar .flow.json
+                Importar .flow
               </Button>
               <Button
                 variant="outline"
@@ -296,6 +281,39 @@ function HomePage() {
         </div>
       </section>
 
+      <section className="relative z-10 border-y border-border bg-card/55">
+        <div className="mx-auto grid max-w-6xl gap-8 px-6 py-12 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              icon: Gauge,
+              title: "Rápido",
+              text: "Comece em segundos e organize o canvas com atalhos diretos.",
+            },
+            {
+              icon: Workflow,
+              title: "Visual",
+              text: "Formas, conexões e cores para processos fáceis de compreender.",
+            },
+            {
+              icon: UserRoundX,
+              title: "Sem cadastro",
+              text: "Seus fluxos ficam no navegador durante esta fase do produto.",
+            },
+            {
+              icon: FileDown,
+              title: "Portátil",
+              text: "Exporte em .flow para continuar depois ou em PNG para compartilhar.",
+            },
+          ].map(({ icon: Icon, title, text }) => (
+            <article key={title} className="border-t border-border pt-5">
+              <Icon className="h-5 w-5 text-brand" />
+              <h2 className="mt-4 text-sm font-semibold">{title}</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">{text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       {/* Library */}
       <section className="relative z-10 mx-auto max-w-6xl px-6 py-14">
         <div className="mb-6 flex items-end justify-between gap-4 border-b border-border pb-4">
@@ -311,6 +329,7 @@ function HomePage() {
           <div className="relative w-64">
             <Search className="pointer-events-none absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input
+              aria-label="Buscar fluxo na biblioteca"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar fluxo…"
@@ -342,12 +361,7 @@ function HomePage() {
         </div>
       </section>
 
-      <footer className="relative z-10 border-t border-border">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 text-[11px] text-muted-foreground">
-          <span className="font-display italic">Fluxo</span>
-          <span className="font-mono uppercase tracking-[0.18em]">pense visualmente</span>
-        </div>
-      </footer>
+      <PublicFooter />
 
       <ExternalAiFlowModal
         open={aiOpen}
@@ -418,6 +432,7 @@ function FlowCard({
               variant="ghost"
               onClick={onDuplicate}
               title="Duplicar"
+              aria-label={`Duplicar ${project.name}`}
               className="h-8 w-8 rounded-full p-0"
             >
               <Copy className="h-3.5 w-3.5" />
@@ -427,6 +442,7 @@ function FlowCard({
               variant="ghost"
               onClick={onDelete}
               title="Excluir"
+              aria-label={`Excluir ${project.name}`}
               className="h-8 w-8 rounded-full p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
             >
               <Trash2 className="h-3.5 w-3.5" />

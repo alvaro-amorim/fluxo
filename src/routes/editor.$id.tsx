@@ -4,14 +4,16 @@ import { FlowEditor } from "@/components/flow/FlowEditor";
 import { Toaster } from "@/components/ui/sonner";
 import { getCurrentProject, loadLibrary, newEmptyProject, upsertProject } from "@/lib/flow/store";
 import type { FlowProject } from "@/lib/flow/types";
+import { createPageHead } from "@/lib/siteMeta";
 
 export const Route = createFileRoute("/editor/$id")({
-  head: () => ({
-    meta: [
-      { title: "Fluxo — editor" },
-      { name: "description", content: "Editor visual de fluxogramas do Fluxo." },
-    ],
-  }),
+  head: () =>
+    createPageHead({
+      title: "Editor",
+      description: "Editor visual de fluxogramas do Fluxo.",
+      path: "/editor",
+      noIndex: true,
+    }),
   component: EditorPage,
 });
 

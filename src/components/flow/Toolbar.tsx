@@ -128,6 +128,7 @@ export function Toolbar(props: ToolbarProps) {
           onClick={() => onModeChange(isFloating ? "side" : "floating")}
           className="rounded p-1 text-muted-foreground hover:bg-accent"
           title={isFloating ? "Modo lateral" : "Modo flutuante"}
+          aria-label={isFloating ? "Usar toolbar lateral" : "Usar toolbar flutuante"}
         >
           {isFloating ? <PanelLeft className="h-3.5 w-3.5" /> : <Move className="h-3.5 w-3.5" />}
         </button>

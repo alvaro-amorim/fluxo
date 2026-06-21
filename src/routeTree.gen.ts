@@ -9,48 +9,184 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermosRouteImport } from './routes/termos'
+import { Route as SobreRouteImport } from './routes/sobre'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as ExemplosRouteImport } from './routes/exemplos'
+import { Route as EditorRouteImport } from './routes/editor'
+import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EditorIndexRouteImport } from './routes/editor.index'
 import { Route as EditorIdRouteImport } from './routes/editor.$id'
 
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SobreRoute = SobreRouteImport.update({
+  id: '/sobre',
+  path: '/sobre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExemplosRoute = ExemplosRouteImport.update({
+  id: '/exemplos',
+  path: '/exemplos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditorRoute = EditorRouteImport.update({
+  id: '/editor',
+  path: '/editor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContatoRoute = ContatoRouteImport.update({
+  id: '/contato',
+  path: '/contato',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EditorIndexRoute = EditorIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EditorRoute,
+} as any)
 const EditorIdRoute = EditorIdRouteImport.update({
-  id: '/editor/$id',
-  path: '/editor/$id',
-  getParentRoute: () => rootRouteImport,
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => EditorRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/contato': typeof ContatoRoute
+  '/editor': typeof EditorRouteWithChildren
+  '/exemplos': typeof ExemplosRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/sobre': typeof SobreRoute
+  '/termos': typeof TermosRoute
   '/editor/$id': typeof EditorIdRoute
+  '/editor/': typeof EditorIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/contato': typeof ContatoRoute
+  '/exemplos': typeof ExemplosRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/sobre': typeof SobreRoute
+  '/termos': typeof TermosRoute
   '/editor/$id': typeof EditorIdRoute
+  '/editor': typeof EditorIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/contato': typeof ContatoRoute
+  '/editor': typeof EditorRouteWithChildren
+  '/exemplos': typeof ExemplosRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/sobre': typeof SobreRoute
+  '/termos': typeof TermosRoute
   '/editor/$id': typeof EditorIdRoute
+  '/editor/': typeof EditorIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/editor/$id'
+  fullPaths:
+    | '/'
+    | '/contato'
+    | '/editor'
+    | '/exemplos'
+    | '/privacidade'
+    | '/sobre'
+    | '/termos'
+    | '/editor/$id'
+    | '/editor/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/editor/$id'
-  id: '__root__' | '/' | '/editor/$id'
+  to:
+    | '/'
+    | '/contato'
+    | '/exemplos'
+    | '/privacidade'
+    | '/sobre'
+    | '/termos'
+    | '/editor/$id'
+    | '/editor'
+  id:
+    | '__root__'
+    | '/'
+    | '/contato'
+    | '/editor'
+    | '/exemplos'
+    | '/privacidade'
+    | '/sobre'
+    | '/termos'
+    | '/editor/$id'
+    | '/editor/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  EditorIdRoute: typeof EditorIdRoute
+  ContatoRoute: typeof ContatoRoute
+  EditorRoute: typeof EditorRouteWithChildren
+  ExemplosRoute: typeof ExemplosRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
+  SobreRoute: typeof SobreRoute
+  TermosRoute: typeof TermosRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sobre': {
+      id: '/sobre'
+      path: '/sobre'
+      fullPath: '/sobre'
+      preLoaderRoute: typeof SobreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exemplos': {
+      id: '/exemplos'
+      path: '/exemplos'
+      fullPath: '/exemplos'
+      preLoaderRoute: typeof ExemplosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/editor': {
+      id: '/editor'
+      path: '/editor'
+      fullPath: '/editor'
+      preLoaderRoute: typeof EditorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contato': {
+      id: '/contato'
+      path: '/contato'
+      fullPath: '/contato'
+      preLoaderRoute: typeof ContatoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -58,19 +194,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/editor/': {
+      id: '/editor/'
+      path: '/'
+      fullPath: '/editor/'
+      preLoaderRoute: typeof EditorIndexRouteImport
+      parentRoute: typeof EditorRoute
+    }
     '/editor/$id': {
       id: '/editor/$id'
-      path: '/editor/$id'
+      path: '/$id'
       fullPath: '/editor/$id'
       preLoaderRoute: typeof EditorIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof EditorRoute
     }
   }
 }
 
+interface EditorRouteChildren {
+  EditorIdRoute: typeof EditorIdRoute
+  EditorIndexRoute: typeof EditorIndexRoute
+}
+
+const EditorRouteChildren: EditorRouteChildren = {
+  EditorIdRoute: EditorIdRoute,
+  EditorIndexRoute: EditorIndexRoute,
+}
+
+const EditorRouteWithChildren =
+  EditorRoute._addFileChildren(EditorRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  EditorIdRoute: EditorIdRoute,
+  ContatoRoute: ContatoRoute,
+  EditorRoute: EditorRouteWithChildren,
+  ExemplosRoute: ExemplosRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
+  SobreRoute: SobreRoute,
+  TermosRoute: TermosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

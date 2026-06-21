@@ -1,48 +1,101 @@
 # Deploy do Fluxo
 
-## Arquitetura de entrega
+Este documento descreve como publicar o **Fluxo** como web app público.
 
-O Fluxo usa TanStack Start com SSR e Nitro. Portanto, o projeto **não deve ser publicado copiando apenas uma pasta estática**. O preset Nitro precisa corresponder ao ambiente de hospedagem.
+O projeto usa **TanStack Start com SSR e Nitro**, portanto não deve ser tratado como um site estático simples. O artefato de produção inclui runtime server/edge conforme o preset escolhido.
 
-O `vite.config.ts` seleciona o preset nesta ordem:
+---
 
-1. valor explícito de `NITRO_PRESET`;
-2. `vercel` quando a variável `VERCEL` existe;
-3. `netlify` quando a variável `NETLIFY` existe;
-4. `node-server` para build local ou hospedagem Node genérica.
+## 1. Arquitetura de entrega
 
-## Variáveis de ambiente
+O `vite.config.ts` seleciona o preset Nitro nesta ordem:
 
-| Variável        | Obrigatória             | Uso                                                                                                    |
-| --------------- | ----------------------- | ------------------------------------------------------------------------------------------------------ |
-| `VITE_SITE_URL` | Recomendada em produção | URL pública sem barra final, usada em canonical e Open Graph. Exemplo: `https://dominio-real.example`. |
-| `NITRO_PRESET`  | Opcional                | Força o alvo Nitro, por exemplo `vercel`, `netlify` ou `node-server`.                                  |
+1. `NITRO_PRESET`, quando definido manualmente;
+2. `vercel`, quando a variável `VERCEL` existe;
+3. `netlify`, quando a variável `NETLIFY` existe;
+4. `node-server`, para build local ou hospedagem Node genérica.
 
-Não defina `VITE_SITE_URL` com domínio provisório. Canonical é omitido quando a variável não existe.
+Por isso:
 
-## Vercel
+- não force `dist`, `.output/public` ou outra pasta estática como único output;
+- não publique apenas assets estáticos sem validar SSR e rotas diretas;
+- sempre teste refresh direto em rotas como `/sobre`, `/editor` e `/privacidade`.
+
+---
+
+## 2. Variáveis de ambiente
+
+| Variável | Obrigatória | Uso |
+| --- | --- | --- |
+| `VITE_SITE_URL` | Recomendada em produção | URL pública sem barra final, usada em canonical e Open Graph. Exemplo: `https://fluxo-nine-theta.vercel.app`. |
+| `NITRO_PRESET` | Opcional | Força o alvo Nitro, por exemplo `vercel`, `netlify` ou `node-server`. |
+
+Regras:
+
+- use `VITE_SITE_URL` sem barra final;
+- se alterar variáveis de ambiente no provedor, faça novo deploy;
+- se ainda estiver usando URL temporária, é aceitável configurar `VITE_SITE_URL` com a URL pública principal da Vercel/Netlify;
+- quando adotar domínio próprio, atualize `VITE_SITE_URL` e redeploye.
+
+---
+
+## 3. Deploy na Vercel
+
+Configuração recomendada:
+
+| Campo | Valor |
+| --- | --- |
+| Framework Preset | Auto-detectado / Other, se necessário |
+| Install Command | `npm ci` |
+| Build Command | `npm run build` |
+| Output Directory | deixar vazio / não forçar pasta estática |
+| Node.js | 20 ou superior |
+
+Passos:
 
 1. Importe o repositório na Vercel.
-2. Use Node.js 20 ou superior.
-3. Comando de instalação: `npm ci`.
-4. Comando de build: `npm run build`.
-5. Não configure uma pasta estática como output manual.
-6. Cadastre `VITE_SITE_URL` com o domínio final.
+2. Escolha o branch de produção desejado.
+3. Configure `npm ci` como install command.
+4. Configure `npm run build` como build command.
+5. Não configure output directory manualmente.
+6. Faça o primeiro deploy.
+7. Copie a URL pública final.
+8. Configure `VITE_SITE_URL` com essa URL.
+9. Faça redeploy para aplicar a variável.
+10. Valide todas as rotas públicas e o editor.
 
-A Vercel fornece a variável `VERCEL`; o build seleciona automaticamente o preset Nitro `vercel`. Se o ambiente não fornecer essa variável, configure `NITRO_PRESET=vercel`.
+A Vercel normalmente fornece a variável `VERCEL`, então o preset Nitro `vercel` é selecionado automaticamente. Se isso falhar, configure:
 
-## Netlify
+```env
+NITRO_PRESET=vercel
+```
 
-1. Conecte o repositório na Netlify.
-2. Use Node.js 20 ou superior.
-3. Comando de instalação: `npm ci`.
-4. Comando de build: `npm run build`.
-5. Não force `dist/client` como publicação estática.
-6. Cadastre `VITE_SITE_URL` com o domínio final.
+---
 
-A Netlify fornece a variável `NETLIFY`; o build seleciona automaticamente o preset Nitro `netlify`. Se necessário, configure `NITRO_PRESET=netlify` explicitamente.
+## 4. Deploy na Netlify
 
-## Servidor Node genérico
+Configuração recomendada:
+
+| Campo | Valor |
+| --- | --- |
+| Install Command | `npm ci` |
+| Build Command | `npm run build` |
+| Publish Directory | não force `dist/client` sem validar SSR |
+| Node.js | 20 ou superior |
+
+A Netlify normalmente fornece a variável `NETLIFY`, então o preset Nitro `netlify` é selecionado automaticamente. Se necessário, configure:
+
+```env
+NITRO_PRESET=netlify
+```
+
+Valide rotas diretas depois do deploy. Se alguma rota quebrar por refresh direto, revise a estratégia de SSR/fallback antes de divulgar.
+
+---
+
+## 5. Servidor Node genérico
+
+Para hospedar em um ambiente Node:
 
 ```bash
 npm ci
@@ -50,27 +103,72 @@ npm run build
 node .output/server/index.mjs
 ```
 
-O build local usa o preset `node-server`. Defina `HOST`, `PORT` e `VITE_SITE_URL` conforme o ambiente. Coloque um proxy reverso com HTTPS na frente do processo Node.
+Recomendações:
 
-## Preview local
+- usar Node.js 20 ou superior;
+- configurar `HOST`, `PORT` e `VITE_SITE_URL` conforme o ambiente;
+- colocar HTTPS na frente do processo, normalmente com proxy reverso;
+- monitorar logs e reiniciar o processo com um gerenciador como PM2, systemd ou similar.
+
+---
+
+## 6. Preview local do build
+
+Antes de publicar:
 
 ```bash
 npm run build
 npm run preview
 ```
 
-O preview valida a aplicação compilada localmente. Ele não substitui o teste do artefato específico do provedor.
+O preview local valida o artefato compilado, mas não substitui o teste no provedor real. Sempre teste também a URL de preview/produção da Vercel, Netlify ou servidor escolhido.
 
-## Hospedagem estritamente estática
+---
 
-Não é o alvo atual. Para publicar sem runtime Node/edge, será necessário validar uma estratégia oficial de prerender para todas as páginas e tratar a rota dinâmica `/editor/:id`. Não publique somente `dist/client`, pois isso pode quebrar SSR, rotas diretas e respostas 404.
+## 7. Checklist pós-deploy
 
-## Antes de apontar o domínio
+Depois de publicar, validar:
 
-- executar `npm run lint` e `npm run build`;
-- testar todas as rotas por acesso direto, não apenas por navegação interna;
-- definir `VITE_SITE_URL`;
-- substituir o e-mail provisório da página de contato;
-- gerar `sitemap.xml` com URLs absolutas depois que o domínio final estiver definido;
-- confirmar cache de assets e fallback de rotas no provedor;
-- revisar [PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md).
+- [ ] `/` abre a home.
+- [ ] `/editor` cria/abre um fluxo.
+- [ ] `/exemplos` abre.
+- [ ] `/sobre` abre.
+- [ ] `/privacidade` abre.
+- [ ] `/termos` abre.
+- [ ] `/contato` abre.
+- [ ] refresh direto em cada rota funciona.
+- [ ] criação de bloco funciona.
+- [ ] criação de seta funciona.
+- [ ] exportação `.flow` funciona.
+- [ ] importação `.flow` funciona.
+- [ ] exportação PNG funciona.
+- [ ] atalhos `F`, `K`, `L` e `A` funcionam.
+- [ ] modo apresentação funciona.
+- [ ] console não mostra erro crítico.
+
+---
+
+## 8. Hospedagem estritamente estática
+
+Não é o alvo atual.
+
+Para publicar sem runtime Node/edge, seria necessário validar uma estratégia oficial de prerender para todas as páginas e tratar corretamente a rota dinâmica `/editor/:id`.
+
+Não publique apenas `dist/client` ou `.output/public` sem confirmar que:
+
+- SSR não é necessário;
+- rotas diretas funcionam;
+- 404 funciona;
+- editor e import/export continuam operando.
+
+---
+
+## 9. Antes de divulgar publicamente
+
+- [ ] `npm run lint` passou.
+- [ ] `npm run build` passou.
+- [ ] `VITE_SITE_URL` aponta para a URL pública correta.
+- [ ] E-mail de contato está correto.
+- [ ] Política de privacidade e termos estão publicados.
+- [ ] O app foi testado em produção.
+- [ ] A documentação em [PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md) foi revisada.

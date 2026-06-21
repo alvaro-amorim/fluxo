@@ -1,4 +1,4 @@
-﻿import { Mail, MessageSquareText } from "lucide-react";
+import { Mail, MessageSquareText } from "lucide-react";
 import { createFileRoute } from "@tanstack/react-router";
 import { PublicPage } from "@/components/site/PublicSite";
 import { createPageHead } from "@/lib/siteMeta";
@@ -18,15 +18,15 @@ function ContactPage() {
     <PublicPage
       eyebrow="Fale com o projeto"
       title="Contato e feedback"
-      description="Relatos objetivos ajudam a priorizar correÃ§Ãµes e tornar o editor mais confiÃ¡vel."
+      description="Relatos objetivos ajudam a priorizar correções e tornar o editor mais confiável."
     >
       <div className="grid gap-10 sm:grid-cols-2">
         <section className="border-t border-border pt-5">
           <MessageSquareText className="h-5 w-5 text-brand" />
           <h2 className="mt-4 font-display text-3xl">Issues no GitHub</h2>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Para bugs e sugestÃµes tÃ©cnicas, abra uma issue com passos para reproduzir, resultado
-            esperado e capturas de tela quando possÃ­vel.
+            Para bugs e sugestões técnicas, abra uma issue com passos para reproduzir, resultado
+            esperado e capturas de tela quando possível.
           </p>
           <a
             href="https://github.com/alvaro-amorim/fluxo/issues"
@@ -41,8 +41,8 @@ function ContactPage() {
           <Mail className="h-5 w-5 text-brand" />
           <h2 className="mt-4 font-display text-3xl">E-mail</h2>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Canal provisÃ³rio para contato geral. O endereÃ§o deve ser substituÃ­do pelo e-mail
-            oficial antes da divulgaÃ§Ã£o pÃºblica do domÃ­nio.
+            Canal para contato geral, sugestões, dúvidas sobre o uso do Fluxo e solicitações
+            relacionadas ao projeto.
           </p>
           <a
             href="mailto:comerc.ias.prod@gmail.com"
@@ -50,9 +50,6 @@ function ContactPage() {
           >
             comerc.ias.prod@gmail.com
           </a>
-          <p className="mt-2 text-xs font-medium uppercase text-muted-foreground">
-            TODO: substituir pelo contato oficial
-          </p>
         </section>
       </div>
     </PublicPage>

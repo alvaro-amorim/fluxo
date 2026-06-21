@@ -1,421 +1,213 @@
-# STATUS_DESENVOLVIMENTO.md
-
 # Status de Desenvolvimento — Fluxo
 
-## Branch de trabalho
+Este documento registra o estado atual do projeto **Fluxo**.
+
+Última revisão documental: 2026-06-21.
+
+---
+
+## 1. Branch principal de desenvolvimento
 
 ```txt
 dev/estrutura-base-fluxo
 ```
 
-Esta branch foi criada a partir da `main` para manter o desenvolvimento seguro e separado.
+A branch `dev/estrutura-base-fluxo` concentra o estado atual validado do produto.
 
-A `main` não deve ser alterada até que esta branch seja validada localmente.
+A `main` só deve receber merge quando houver decisão explícita de promoção.
 
 ---
 
-## Validação local mais recente
+## 2. Estado atual do produto
 
-Validação feita no Windows, na pasta local `fluxo`, após formatação com Prettier e normalização de line endings.
+O Fluxo está publicado como **web app MVP**.
 
-Resultado informado:
+Estado atual:
+
+- editor funcional;
+- home pública;
+- páginas institucionais;
+- deploy Vercel validado;
+- documentação de deploy e produção;
+- README profissional;
+- import/export `.flow`;
+- export PNG;
+- modo apresentação;
+- atalhos contextuais;
+- rotas públicas de suporte.
+
+URL de produção atual:
 
 ```txt
-npm run dev    ✅ aplicação rodou em localhost
+https://fluxo-nine-theta.vercel.app/
+```
+
+---
+
+## 3. Validação técnica mais recente
+
+Validações executadas localmente após preparação de produção:
+
+```txt
+npm run lint   ✅ 0 errors, 6 warnings conhecidos
 npm run build  ✅ build concluído com sucesso
-npm run lint   ✅ 0 errors, 6 warnings
 ```
 
-Observação: os 6 warnings restantes são de `react-refresh/only-export-components` em componentes UI reaproveitados. Eles não bloqueiam o build nem o funcionamento atual.
+Os 6 warnings conhecidos são de `react-refresh/only-export-components` em componentes de UI reaproveitados. Eles não bloqueiam o release.
+
+O build gera artefatos Nitro/TanStack Start em `.output`.
 
 ---
 
-## Objetivo da rodada
+## 4. Funcionalidades implementadas
 
-Organizar a base técnica do app **Fluxo** sem destruir o front-end criado no Lovable.
+### Editor
 
-Prioridades desta rodada:
+- Canvas com grid, snap, zoom amplo e minimapa.
+- Criação, movimentação, duplicação, exclusão e redimensionamento de blocos.
+- Formas SVG: retângulo, retângulo arredondado, círculo, losango, hexágono e cilindro.
+- Edição rápida de título, forma e cor.
+- Toolbar lateral e toolbar contextual.
+- Modo compacto.
+- Modo apresentação.
 
-```txt
-schema .flow.json
-validação
-normalização
-serialização
-compatibilidade com formato antigo
-adapters React Flow ↔ schema Fluxo
-refatoração inicial do editor
-atalhos essenciais
-resize visual
-exportação PNG real inicial
-paleta flutuante arrastável
-layout reutilizável
-roteamento inicial de handles inteligentes
-```
+### Conexões
 
----
+- Linhas, setas e setas bidirecionais.
+- Conversão rápida entre linha e seta.
+- Handles geométricos na borda real das formas.
+- Anchors distribuídos por node/lado.
+- Corredores visuais para múltiplas conexões.
+- Desvio de blocos como obstáculos sólidos.
+- Calibração visual dos endpoints das setas.
 
-## Arquivos adicionados
+### Física do canvas
 
-```txt
-docs/ANALISE_ESTADO_ATUAL.md
-src/lib/flow/schema.ts
-src/lib/flow/defaults.ts
-src/lib/flow/normalization.ts
-src/lib/flow/validation.ts
-src/lib/flow/serialization.ts
-src/lib/flow/adapters.ts
-src/lib/flow/layout.ts
-src/lib/flow/edgeRouting.ts
-src/lib/export/exportPng.ts
-```
+- Blocos não devem permanecer sobrepostos ao soltar.
+- Criação e duplicação procuram posição livre próxima.
+- Resize tenta evitar sobreposição final.
+- Autoexpansão de blocos quando muitas conexões pressionam o mesmo bloco.
+- Roteamento recalcula após mover/redimensionar/expandir.
 
----
+### Produtividade
 
-## Arquivos alterados
+- Atalhos contextuais:
+  - `F`: alternar forma do bloco selecionado;
+  - `K`: alternar cor de bloco, linha ou seta selecionada;
+  - `L`: ativar linha ou converter seta em linha;
+  - `A`: ativar seta ou converter linha em seta;
+  - `V`, `B`, `C`, `G`, `S`, `Alt + L`, `Ctrl + Z`, `Ctrl + Y`, `Ctrl + 0`, `Shift + P`, `Alt + E`, `Alt + P`, `Alt + O`.
+- Atalhos são bloqueados em campos de texto e modais.
+- Undo/redo.
+- Organização automática.
 
-```txt
-.gitattributes
-package.json
-package-lock.json
-src/lib/flow/types.ts
-src/lib/flow/example.ts
-src/lib/flow/store.ts
-src/lib/flow/schema.ts
-src/lib/flow/adapters.ts
-src/components/flow/FlowEditor.tsx
-src/components/flow/FluxoNode.tsx
-src/components/flow/Toolbar.tsx
-src/components/flow/NodePropertiesModal.tsx
-```
+### Portabilidade
 
----
+- Exportação `.flow`.
+- Importação `.flow`.
+- Exportação PNG.
+- Persistência local no navegador.
 
-## O que foi implementado
+### Web público
 
-## 1. Auditoria documentada
-
-Criado:
-
-```txt
-docs/ANALISE_ESTADO_ATUAL.md
-```
-
-Esse arquivo registra:
-
-- stack identificada;
-- rotas principais;
-- componentes principais;
-- camada de domínio atual;
-- funcionalidades já existentes;
-- partes simuladas/incompletas;
-- riscos;
-- ordem segura de implementação.
+- Home pública.
+- `/editor` e `/editor/:id`.
+- `/exemplos`.
+- `/sobre`.
+- `/privacidade`.
+- `/termos`.
+- `/contato`.
+- SEO básico e metadados.
+- Favicon e `robots.txt`.
 
 ---
 
-## 2. Tipos ampliados
+## 5. Documentação atualizada
 
-`src/lib/flow/types.ts` foi expandido para suportar o schema oficial definido em:
+Documentos principais:
 
-```txt
-docs/SCHEMA_FLOW_JSON.md
-```
-
-Foram adicionados/preparados:
-
-- `schemaVersion`;
-- `FlowViewport`;
-- `FlowProjectSettings`;
-- `FlowMetadata`;
-- `FlowCustomField`;
-- `FlowEdgeStyle`;
-- `FlowEdgeRouting`;
-- handles de conexão;
-- campos opcionais de projeto;
-- compatibilidade com `version` antigo;
-- prioridades de edge incluindo `critical`;
-- tipos futuros de edge.
+- `README.md` — visão geral pública e técnica do projeto.
+- `docs/CONSTITUICAO_DO_APP.md` — princípios do produto e decisões de escopo.
+- `docs/ROADMAP.md` — evolução recomendada.
+- `docs/SCHEMA_FLOW_JSON.md` — contrato do arquivo `.flow`.
+- `docs/DEPLOY.md` — deploy em Vercel, Netlify ou Node.
+- `docs/PRODUCTION_CHECKLIST.md` — checklist de produção.
+- `docs/planning/WEB_APP_IMPROVEMENT_PLAN.md` — plano histórico de evolução para web app.
+- `docs/audits/REPO_STATE_AUDIT.md` — auditoria de estado do repositório.
 
 ---
 
-## 3. Defaults oficiais
+## 6. Decisões estratégicas atuais
 
-Criado:
-
-```txt
-src/lib/flow/defaults.ts
-```
-
-Inclui:
-
-- background padrão;
-- viewport padrão;
-- settings padrão;
-- tamanho padrão de node;
-- tamanho mínimo de node;
-- ícone padrão;
-- estilo padrão de edge;
-- roteamento padrão;
-- criação de ids;
-- criação de projeto vazio;
-- criação de arquivo vazio;
-- lista oficial de shapes.
+- Prioridade atual: web app público.
+- Desktop/Electron não é prioridade no curto prazo.
+- IA interna não faz parte do MVP.
+- Backend não é obrigatório nesta fase.
+- Login e colaboração ficam para avaliação futura.
+- Google AdSense só deve ser considerado depois de consolidar conteúdo público, privacidade, políticas e experiência de navegação.
 
 ---
 
-## 4. Normalização robusta
+## 7. Pendências conhecidas
 
-Criado:
+### Produto
 
-```txt
-src/lib/flow/normalization.ts
-```
+- Criar templates reais em `/exemplos`.
+- Criar tutoriais públicos para ajudar SEO e adoção.
+- Melhorar onboarding de novo usuário dentro do editor.
+- Avaliar galeria de modelos.
 
-A normalização agora:
+### Técnico
 
-- aceita arquivos antigos e novos;
-- aplica `schemaVersion: 0.1.0`;
-- valida `app: Fluxo`;
-- normaliza projeto;
-- normaliza viewport;
-- normaliza settings;
-- normaliza nodes;
-- normaliza edges;
-- aplica defaults;
-- remove edges inválidas;
-- deduplica nodes;
-- gera warnings;
-- preserva informações ocultas e semânticas.
+- Reduzir gradualmente responsabilidade de `FlowEditor.tsx`.
+- Adicionar testes unitários para `src/lib/flow`.
+- Revisar exportação PNG em fluxos muito grandes.
+- Avaliar IndexedDB para persistência local mais robusta.
+- Revisar acessibilidade do editor.
+- Melhorar performance em fluxos extremamente grandes.
+- Documentar regras de rotas manuais que atravessam blocos.
 
----
+### Produção
 
-## 5. Validação centralizada
-
-Criado:
-
-```txt
-src/lib/flow/validation.ts
-```
-
-Funções disponíveis:
-
-```ts
-validateFlowFile(input);
-assertValidFlowFile(input);
-isFlowFile(input);
-```
+- Manter `VITE_SITE_URL` coerente com a URL pública final.
+- Gerar `sitemap.xml` quando a URL/domínio estiver estabilizado.
+- Revisar termos e privacidade antes de escala comercial.
 
 ---
 
-## 6. Serialização oficial
+## 8. Critérios para continuar desenvolvendo
 
-Criado:
+Antes de qualquer nova missão:
 
-```txt
-src/lib/flow/serialization.ts
-```
+1. criar branch específica;
+2. definir escopo único;
+3. evitar alterações amplas sem necessidade;
+4. validar com lint e build;
+5. testar manualmente o editor;
+6. fazer push apenas após teste local;
+7. mergear na `dev/estrutura-base-fluxo` somente quando a branch estiver limpa.
 
-Funções disponíveis:
+Comandos mínimos:
 
-```ts
-projectToFlowFile(project);
-flowFileToProject(file);
-parseFlowFileJson(jsonText);
-stringifyFlowFile(file);
-slugifyFlowName(name);
-getFlowFileName(name);
-```
-
----
-
-## 7. Ponto central do schema
-
-Criado:
-
-```txt
-src/lib/flow/schema.ts
-```
-
-Objetivo: reexportar tipos, defaults, validação, normalização, serialização, layout e roteamento para facilitar imports futuros.
-
----
-
-## 8. Adapters React Flow ↔ Fluxo
-
-Criado:
-
-```txt
-src/lib/flow/adapters.ts
-```
-
-Funções disponíveis:
-
-```ts
-fluxoNodeToReactFlowNode(node);
-fluxoEdgeToReactFlowEdge(edge);
-flowProjectToReactFlow(project);
-reactFlowNodeToFluxoNode(node);
-reactFlowEdgeToFluxoEdge(edge);
-reactFlowToFlowProject(base, nodes, edges);
-```
-
-Esses adapters começaram a ser usados diretamente no editor.
-
-Evolução mais recente: `flowProjectToReactFlow()` agora usa a camada de roteamento inicial para resolver handles `auto` ao importar/abrir fluxos, escolhendo `top/right/bottom/left` conforme a posição relativa entre os blocos.
-
----
-
-## 9. Refatoração inicial do editor
-
-`src/components/flow/FlowEditor.tsx` foi refatorado para usar:
-
-```ts
-flowProjectToReactFlow();
-reactFlowToFlowProject();
-projectToFlowFile();
-flowFileToProject();
-parseFlowFileJson();
-stringifyFlowFile();
-getFlowFileName();
-```
-
-Objetivo: reduzir duplicação de lógica de schema/import/export dentro do componente.
-
----
-
-## 10. Atalhos essenciais
-
-Foram adicionados/reforçados:
-
-```txt
-Delete / Backspace  excluir seleção
-Ctrl+D              duplicar seleção
-Ctrl+A              selecionar tudo
-Esc                 limpar seleção / fechar modais
-Ctrl+P              exportar PNG
-```
-
----
-
-## 11. Resize visual
-
-`FluxoNode` passou a usar `NodeResizer` do React Flow.
-
-Objetivo:
-
-- permitir redimensionamento visual no canvas;
-- respeitar tamanho mínimo;
-- atualizar `width` e `height` do node;
-- preservar dimensões no `.flow.json`.
-
----
-
-## 12. Exportação PNG real inicial
-
-Criado:
-
-```txt
-src/lib/export/exportPng.ts
-```
-
-A exportação usa `html-to-image`.
-
-Evolução feita nesta etapa:
-
-- tenta capturar o fluxo completo com base nos nodes presentes no DOM;
-- aplica margem;
-- ignora minimap e controles;
-- usa fallback para exportar a viewport visível se a captura completa falhar.
-
-Ainda precisa validação visual local em fluxos grandes.
-
----
-
-## 13. Paleta flutuante arrastável
-
-`Toolbar` foi ajustada para permitir movimentação quando estiver no modo flutuante.
-
-Objetivo: aproximar a experiência futura de janela/paleta separada.
-
----
-
-## 14. Layout reutilizável
-
-Criado:
-
-```txt
-src/lib/flow/layout.ts
-```
-
-Objetivo:
-
-- preparar o botão “Organizar fluxo” para usar lógica fora do `FlowEditor`;
-- permitir layout vertical/horizontal em função pura;
-- facilitar futura troca por ELK.js sem reescrever a UI.
-
-Ainda precisa ser integrado ao botão do editor.
-
----
-
-## 15. Roteamento inicial de handles inteligentes
-
-Criado:
-
-```txt
-src/lib/flow/edgeRouting.ts
-```
-
-Objetivo:
-
-- calcular o melhor lado de saída/entrada entre dois blocos com base na posição relativa;
-- usar `right → left` quando o alvo está à direita;
-- usar `left → right` quando o alvo está à esquerda;
-- usar `bottom → top` quando o alvo está abaixo;
-- usar `top → bottom` quando o alvo está acima;
-- preservar handles definidos manualmente;
-- resolver apenas handles `auto` ou ausentes;
-- preparar a próxima etapa de recálculo dinâmico ao mover blocos.
-
-Integração atual:
-
-- `flowProjectToReactFlow()` já aplica essa resolução ao abrir/importar um fluxo.
-
-Limitação atual:
-
-- o editor ainda não recalcula dinamicamente as handles ao mover blocos; isso fica para a próxima rodada.
-
----
-
-## Próxima etapa recomendada
-
-```txt
-1. Integrar calculateAutoLayout ao botão Organizar fluxo
-2. Melhorar histórico para registrar resize/move no momento correto
-3. Recalcular handles automaticamente ao mover blocos
-4. Testar exportação PNG em fluxo grande
-5. Avaliar bugs visuais do NodeResizer
-6. Preparar desktopBridge antes de Electron
-```
-
----
-
-## Comandos de validação local
-
-Após puxar alterações da branch, rodar:
-
-```powershell
-git pull
-npm install
+```bash
 npm run format
 npm run lint
 npm run build
-npm run dev
+git diff --check
 ```
 
-Resultado esperado:
+---
 
-```txt
-lint: 0 errors, warnings aceitáveis
-build: sucesso
-app: abre em localhost
-```
+## 9. Próxima direção recomendada
+
+Ordem sugerida:
+
+1. criar templates reais;
+2. melhorar `/exemplos`;
+3. criar tutorial público;
+4. adicionar testes de domínio;
+5. revisar acessibilidade;
+6. avaliar persistência em IndexedDB;
+7. só depois avaliar monetização ou backend.
+
+O estado atual é adequado para divulgação inicial como MVP gratuito.

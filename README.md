@@ -1,5 +1,14 @@
 # Fluxo
 
+## Avaliação do produto
+
+- **Demonstração:** [Fluxo publicado](https://fluxo-nine-theta.vercel.app/).
+- **Decisões técnicas:** geometria das formas e conexões, roteamento das setas e portabilidade por arquivos `.flow`.
+- **Persistência:** os dados ficam no navegador; exporte uma cópia para mantê-los fora do dispositivo.
+- **Validação disponível:** scripts de lint e build. Não há script de testes automatizados no pacote atual.
+
+Para avaliação manual, use um fluxo descartável com formas diferentes, conexões, undo/redo, exportação e reimportação. O nome da branch padrão não altera esses requisitos; ela permanece a versão canônica atual, sem renomeação nesta revisão.
+
 **Fluxo** é um editor web gratuito de fluxogramas para criar, conectar, organizar, apresentar e exportar processos diretamente no navegador.
 
 O projeto nasceu como uma ferramenta visual simples para estruturar fluxos de produto, onboarding, automações, processos comerciais, estudos, jornadas de usuário e ideias complexas sem depender de softwares pesados ou de cadastro obrigatório.
@@ -202,11 +211,12 @@ npm run dev
 ### Validações
 
 ```bash
-npm run format
 npm run lint
 npm run build
 npm run preview
 ```
+
+`npm run format` formata e altera os arquivos; use-o intencionalmente durante o desenvolvimento, não como verificação somente de leitura.
 
 ---
 
